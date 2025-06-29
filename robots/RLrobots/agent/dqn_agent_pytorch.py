@@ -14,7 +14,10 @@ class DQNetwork(nn.Module):
         super(DQNetwork, self).__init__()
         self.fc1 = nn.Linear(state_size, hidden_size)
         self.fc2 = nn.Linear(hidden_size, hidden_size)
-        self.fc3 = nn.Linear(hidden_size, action_size)
+        
+        # Dueling architecture
+        self.value_stream = nn.Linear(hidden_size, 1)
+        self.advantage_stream = nn.Linear(hidden_size, action_size)
         
         # Initialize weights
         self.apply(self._init_weights)
@@ -27,7 +30,13 @@ class DQNetwork(nn.Module):
     def forward(self, x):
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
-        return self.fc3(x)
+        
+        value = self.value_stream(x)  # shape: (batch, 1)
+        advantage = self.advantage_stream(x)  # shape: (batch, action_size)
+        
+        # Combine value and advantage into Q-values
+        qvals = value + (advantage - advantage.mean(dim=1, keepdim=True))
+        return qvals
 
 class DQNAgent:
     def __init__(self, state_size=11, action_size=8, learning_rate=0.015, epsilon=1, 
