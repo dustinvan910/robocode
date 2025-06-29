@@ -2,3 +2,5 @@
 robots/RLrobots/.venv/
 
 javadoc/
+
+robots/RLrobots/agent/.venv/
