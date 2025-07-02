@@ -16,6 +16,7 @@ public class RobotState {
     public double enemyHeading;
     public double enemyX;
     public double enemyY;
+    public double enemyVelocity;
     
     public long reward;
     public long time;
@@ -37,6 +38,7 @@ public class RobotState {
         this.enemyHeading = 0;
         this.enemyX = 0;
         this.enemyY = 0;
+        this.enemyVelocity = 0;
 
         this.reward = 0;
         this.time = time;
@@ -54,13 +56,14 @@ public class RobotState {
         this.distanceRemaining = distanceRemaining;
     }
     
-    public void updateEnemyState(double bearing, double distance, double heading, double x, double y) {
+    public void updateEnemyState(double bearing, double distance, double heading, double x, double y, double velocity) {
         // System.out.println("Updating enemy state");
         this.enemyBearing = bearing;
         this.enemyDistance = distance;
         this.enemyHeading = heading;
         this.enemyX = x;
         this.enemyY = y;
+        this.enemyVelocity = velocity;
     }
 
     public void addReward(long reward, String reason) {
@@ -73,9 +76,9 @@ public class RobotState {
             "{\"x\":%.2f,\"y\":%.2f,\"heading\":%.2f,\"energy\":%.2f,\"gunHeading\":%.2f,\"gunHeat\":%.2f," +
             "\"velocity\":%.2f,\"distanceRemaining\":%.2f," +
             "\"enemyBearing\":%.2f,\"enemyDistance\":%.2f,\"enemyHeading\":%.2f," +
-            "\"enemyX\":%.2f,\"enemyY\":%.2f,\"reward\":%d}",
+            "\"enemyX\":%.2f,\"enemyY\":%.2f,\"enemyVelocity\":%.2f,\"reward\":%d}",
             x, y, heading, energy, gunHeading, gunHeat, velocity, distanceRemaining,
-            enemyBearing, enemyDistance, enemyHeading, enemyX, enemyY, reward
+            enemyBearing, enemyDistance, enemyHeading, enemyX, enemyY, enemyVelocity, reward
         );
     }
 }

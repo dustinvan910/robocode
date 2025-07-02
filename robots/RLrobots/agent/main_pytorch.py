@@ -5,8 +5,8 @@ import numpy as np
 from dqn_agent_pytorch import DQNAgent, normalize_state
 
 # Initialize PyTorch DQN agent
-agent = DQNAgent(state_size=11, action_size=9, learning_rate=0.0005)
-agent.load_model()  # Load existing model if available
+agent = DQNAgent(state_size=12, action_size=9, learning_rate=0.002)
+agent.load_model(learning_rate=0.002, filename='dqn_model_pytorch.pth')  # Load existing model if available
 
 # Global state tracking
 current_state = None
@@ -17,20 +17,30 @@ episode_count = 0
 total_reward = 0
 training_losses = []
 step_count = 0
-
+win_episode = 0
+death_episode = 0
+play_time = 0
 # Training statistics
 training_stats = {
     'episodes': [],
     'rewards': [],
     'epsilon': [],
     'losses': [],
-    'wins': 0,
-    'losses': []
+    'wins': [],
+    'deaths': [],
+    'play_time': [],
+    'losses': [],
+    'learning_rate': []
 }
-
+import argparse 
+import os
+# Parse command line arguments
+parser = argparse.ArgumentParser(description='Robot DQN Training')
+parser.add_argument('--play', type=bool, default=False, help='Play real robot', action='store_true')
+args = parser.parse_args()
 
 async def handle_robot(websocket):
-    global current_state, previous_state, previous_action, episode_reward, episode_count, total_reward, training_losses, step_count
+    global current_state, previous_state, previous_action, episode_reward, episode_count, total_reward, training_losses, step_count, win_episode, death_episode, play_time
     
     try:
         print("Robot connected")
@@ -38,11 +48,38 @@ async def handle_robot(websocket):
             try:
                 state_data = json.loads(message)
                 current_state = state_data
-                
+                # print("state_data", state_data)
                 # Check if state_data contains 'test' key and run get_qvalue if it does
+                if args.play == True:
+                    q_values = agent.get_optimal_action(normalize_state(state_data)).squeeze()
+                    max_q_value = q_values.max().item()
+                    await websocket.send(str(max_q_value))
+                    continue
+                
                 if 'test' in state_data:
                     q_values = agent.get_q_values(normalize_state(state_data)).squeeze()
                     await websocket.send(str(q_values.tolist()))
+                    return
+                
+                if 'isWin' in state_data:
+                    play_time = state_data.get('time')
+                    reward = 0
+                    if state_data.get('isWin'):
+                        playtime_quant = (100 - play_time) / 100
+                        reward = 100 * (1 + playtime_quant)
+                        win_episode += 1
+                    else:
+                        reward = -500
+                        death_episode += 1
+                    
+                    agent.remember(
+                        normalize_state(previous_state),
+                        previous_action,
+                        reward,
+                        normalized_state,
+                        1
+                    )
+                    episode_reward+=reward
                     return
                 
                 # if state_data.get('reward', 0) >= 100 or state_data.get('reward', 0) <= -100:
@@ -86,12 +123,6 @@ async def handle_robot(websocket):
                 previous_state = current_state.copy()
                 previous_action = action
 
-                # Print training progress
-                if episode_count % 100 == 0 and episode_count > 0:
-                    avg_reward = total_reward / episode_count
-                    avg_loss = np.mean(training_losses[-100:]) if training_losses else 0
-                    print(f"Episode: {episode_count}, Avg Reward: {avg_reward:.2f}, "
-                            f"Epsilon: {agent.epsilon:.3f}, Avg Loss: {avg_loss:.4f}")
                             
             except json.JSONDecodeError as e:
                 print(f"JSON decode error: {e}")
@@ -102,7 +133,7 @@ async def handle_robot(websocket):
     except Exception as e:
         print(f"Error: {e}")
     finally:
-        print("Client disconnected. Final cleanup")
+        # print("Client disconnected. Final cleanup")
         # End episode
         if previous_state is not None and previous_action is not None:            
             # Update statistics
@@ -112,23 +143,26 @@ async def handle_robot(websocket):
             training_stats['episodes'].append(episode_count)
             training_stats['rewards'].append(episode_reward)
             training_stats['epsilon'].append(agent.epsilon)
-            
+            training_stats['learning_rate'].append(agent.learning_rate)
+            training_stats['wins'].append(win_episode)
+            training_stats['deaths'].append(death_episode)
+            training_stats['play_time'].append(play_time)
             # Add average loss for this episode
             if training_losses:
                 avg_loss = np.mean(training_losses[-50:])  # Last 50 losses
                 training_stats['losses'].append(avg_loss)
             
-            # Save model periodically
-            if episode_count % 10 == 0:
-                agent.save_model()
-                save_training_stats()
-            
-            print(f"Episode {episode_count} ended with reward: {episode_reward:.2f}")
+            print(f"Episode {episode_count} ended with reward: {episode_reward:.2f}, play_time: {play_time}")
             
             # Reset episode variables
             episode_reward = 0
             previous_state = None
             previous_action = None
+
+            # Save model periodically
+            if episode_count % 10 == 0:
+                agent.save_model()
+                save_training_stats()
 
 def save_training_stats():
     """Save training statistics to file"""

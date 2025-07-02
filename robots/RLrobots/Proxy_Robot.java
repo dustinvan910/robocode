@@ -39,10 +39,9 @@ public class Proxy_Robot extends AdvancedRobot implements WebSocketClient.Messag
             while (true) { 
                 if (isEnded) {
                     debug("Robot ended" );
+                    // webSocket.closeConnection();
                     break;
                 }
-                // debug("New turn");
-                setTurnRadarRight(90);
                 this.currentState.updateRobotState(getX(), getY(), getHeading(), getEnergy(), getGunHeading(), getGunHeat(), getVelocity(), getDistanceRemaining());
                 webSocket.sendMessage(this.currentState.toJson());              
 
@@ -65,20 +64,28 @@ public class Proxy_Robot extends AdvancedRobot implements WebSocketClient.Messag
                 
                 this.currentState = new RobotState(getTime());
 
-                if (robotAction.hasFired(pendingAction)) {
-                    currentState.addReward(-2, "Fired gun");
-                }
+                // if (robotAction.hasFired(pendingAction)) {
+                //     currentState.addReward(-2, "Fired gun");
+                // }
 
+                // currentState.addReward(-0.5, "Optimize for using less time");
                 if (getGunHeat() != 0 && robotAction.hasFired(pendingAction)) {
                     currentState.addReward(-5, "Fired hot gun");
                 }
 
                 if (pendingAction == robotAction.AIM) {
-                    if (enemyDistance != 0) {
-                        currentState.addReward(5, "Aim Right");
-                    } else {
+                    if (enemyDistance == 0) {
                         currentState.addReward(-5, "Aim Wrong");
                     }
+                    
+                    // if (enemyDistance == 0) {
+                        // currentState.addReward(-5, "Aim Wrong");
+                    // } else {
+                        // double gunTurn = getHeading() - getGunHeading() + currentState.enemyBearing;
+                        // if (gunTurn == 0) {
+                            // currentState.addReward(-5, "Already Aimed");
+                        // }
+                    // }
                 }
                 execute();
             }
@@ -100,10 +107,11 @@ public class Proxy_Robot extends AdvancedRobot implements WebSocketClient.Messag
         double enemyDistance = e.getDistance();
         double enemyHeading = e.getHeading();
         double enemyBearing = e.getBearing();
+        double enemyVelocity = e.getVelocity();
         double absBearing = getHeading() + enemyBearing;
         double enemyX = getX() + enemyDistance * Math.sin(Math.toRadians(absBearing));
         double enemyY = getY() + enemyDistance * Math.cos(Math.toRadians(absBearing));
-        this.currentState.updateEnemyState(enemyBearing, enemyDistance, enemyHeading, enemyX, enemyY);
+        this.currentState.updateEnemyState(enemyBearing, enemyDistance, enemyHeading, enemyX, enemyY, enemyVelocity);
     }
     
     // Modified handleMessage to set pending action instead of executing immediately
@@ -126,8 +134,7 @@ public class Proxy_Robot extends AdvancedRobot implements WebSocketClient.Messag
     
     // public void onBulletHitBullet(BulletHitBulletEvent e) {
     //     // Robot's bullet hit enemy's bullet
-    //     bulletHitBullet = true;
-    //     System.out.println("Bullet hit bullet! Energy lost: " + e.getBullet().getPower());
+    //     this.currentState.addReward(-2, "Bullet hit bullet");
     // }
     
     public void onHitRobot(HitRobotEvent e) {
@@ -145,7 +152,7 @@ public class Proxy_Robot extends AdvancedRobot implements WebSocketClient.Messag
     public void onHitWall(HitWallEvent e) {
         // Robot hit the wall
         // debug("Hit wall");
-        this.currentState.addReward(-10, "Hit wall");
+        this.currentState.addReward(-5, "Hit wall");
     }
     
     public void onHitByBullet(HitByBulletEvent e) {
@@ -156,23 +163,23 @@ public class Proxy_Robot extends AdvancedRobot implements WebSocketClient.Messag
     
     public void onWin(WinEvent e) {
         isEnded = true;
+        webSocket.sendMessage("{\"isWin\": true, \"time\": " + getTime() + "}");
         // Robot won the battle
         debug("Robot won the battle");
-        this.currentState.addReward(100, "Won the battle");
     }
     
     public void onDeath(DeathEvent e) {
         isEnded = true;
+        webSocket.sendMessage("{\"isWin\": false, \"time\": " + getTime() + "}");
         // Robot died
         debug("Robot died");
-        this.currentState.addReward(-100, "Robot died");
 
     }
     
     
     public void onRoundEnded(RoundEndedEvent e) {
         try{
-            webSocket.closeConnection();
+            
         }catch(Exception ex){
             System.out.println("Error closing WebSocket connection: " + ex);
         }

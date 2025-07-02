@@ -22,6 +22,10 @@ public class RobotAction {
     public static final int FIRE_2 = 6;
     public static final int FIRE_3 = 7;
     public static final int AIM = 8;
+    public static final int TURN_LEFT = 99;
+    public static final int TURN_RIGHT = 100;
+    
+    public int radar_direction = 1;
 
     private Proxy_Robot robot;
     
@@ -37,7 +41,7 @@ public class RobotAction {
     }
 
     public void debug(String message) {
-        //System.out.println(message);
+        System.out.println(message);
     }
 
     public void executeAction(int action) {
@@ -78,17 +82,30 @@ public class RobotAction {
                 debug("Executing action: " + action + " (aim)");
                 aim();
                 break;
+            // case CHANGE_RADAR_DIRECTION:
+            //     radar_direction = radar_direction * -1;
+            //     break;
+            case TURN_LEFT:
+                debug("Executing action: " + action + " (turnLeft)");
+                turnLeft();
+                break;
+            case TURN_RIGHT:
+                debug("Executing action: " + action + " (turnRight)");
+                turnRight();
+                break;
             default:
-                debug("Unknown action: " + action);
+                System.out.println("Unknown action: " + action);
+                System.exit(0);
                 break;
         }
+        robot.setTurnRadarRight(radar_direction * 90);
     }
     
 
     public void doNothing() {}
 
     public void runAwayRight() {
-        robot.setTurnRight(robot.currentState.heading + 45);   
+        robot.setTurnRight(robot.currentState.heading + 45);  
     }   
 
     public void runAwayLeft() {
@@ -120,17 +137,17 @@ public class RobotAction {
         robot.setTurnGunRight(normalizeBearing(gunTurn));
     }
     
-    public void aim_90() {
-        double gunTurn = robot.getHeading() - robot.getGunHeading() + robot.currentState.enemyBearing;
-        robot.setTurnGunRight(normalizeBearing(gunTurn)+ 90);
-    }
-
-        
     double normalizeBearing(double angle) {
         while (angle >  180) angle -= 360;
         while (angle < -180) angle += 360;
         return angle;
     }
 
-    
+    public void turnLeft() {
+        robot.setTurnRight(robot.currentState.heading - 90);   
+    }
+
+    public void turnRight() {
+        robot.setTurnRight(robot.currentState.heading + 90); 
+    }
 } 

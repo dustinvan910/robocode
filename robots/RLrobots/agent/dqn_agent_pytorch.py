@@ -31,7 +31,7 @@ class DQNetwork(nn.Module):
 
 class DQNAgent:
     def __init__(self, state_size=11, action_size=8, learning_rate=0.015, epsilon=1, 
-                 epsilon_min=0.05, epsilon_decay=0.999995, memory_size=10000, device='auto'):
+                 epsilon_min=0.05, epsilon_decay=0.999995, memory_size=30_000, device='auto'):
         """
         Initialize DQN Agent
         
@@ -54,7 +54,7 @@ class DQNAgent:
         self.memory = deque(maxlen=memory_size)
         self.batch_size = 64
         self.gamma = 0.99  # Discount factor
-        self.update_target_frequency = 100
+        self.update_target_frequency = 1000
         self.update_counter = 0
         
         # Device setup
@@ -66,7 +66,7 @@ class DQNAgent:
         # Networks
         self.q_network = DQNetwork(state_size, action_size).to(self.device)
         self.target_network = DQNetwork(state_size, action_size).to(self.device)
-        self.optimizer = optim.Adam(self.q_network.parameters(), lr=learning_rate)
+        self.optimizer = optim.Adam(self.q_network.parameters(), lr=learning_rate )
         
         # Initialize target network
         self.update_target_network()
@@ -85,6 +85,11 @@ class DQNAgent:
         state_tensor = torch.FloatTensor(state).unsqueeze(0).to(self.device)
         q_values = self.q_network(state_tensor)
         return q_values
+    
+    def get_optimal_action(self, state):
+        state_tensor = torch.FloatTensor(state).unsqueeze(0).to(self.device)
+        q_values = self.q_network(state_tensor)
+        return q_values.argmax().item()
     
     def act(self, state):
         """Choose action using epsilon-greedy policy"""
@@ -118,7 +123,7 @@ class DQNAgent:
             target_q_values = rewards + (self.gamma * next_q_values * (1 - dones))
         
         # Compute loss and update
-        print("learning with epsilon", self.epsilon)
+        # print("learning with epsilon", self.epsilon)
         loss = F.mse_loss(current_q_values, target_q_values)
         
         self.optimizer.zero_grad()
@@ -131,6 +136,7 @@ class DQNAgent:
             self.update_target_network()
         
         # Decay epsilon
+        
         if self.epsilon > self.epsilon_min:
             self.epsilon *= self.epsilon_decay
         
@@ -138,30 +144,16 @@ class DQNAgent:
     
     def save_model(self, filename='dqn_model_pytorch.pth'):
         """Save model weights and optimizer state"""
-        model_data = {
-            'q_network_state_dict': self.q_network.state_dict(),
-            'target_network_state_dict': self.target_network.state_dict(),
-            'optimizer_state_dict': self.optimizer.state_dict(),
-            'epsilon': self.epsilon,
-            'memory': list(self.memory)
-        }
-        # torch.save(model_data, filename)
+        torch.save(self.target_network.state_dict(), filename)
         print(f"Model saved to {filename}")
     
-    def load_model(self, filename='dqn_model_pytorch.pth'):
+    def load_model(self, filename='dqn_model_pytorch.pth', learning_rate=0.0005):
         """Load model weights and optimizer state"""
         if os.path.exists(filename):
             checkpoint = torch.load(filename, map_location=self.device)
-            
-            self.q_network.load_state_dict(checkpoint['q_network_state_dict'])
-            self.target_network.load_state_dict(checkpoint['target_network_state_dict'])
-            self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-            self.epsilon = checkpoint['epsilon']
-            
-            # Load memory if available
-            if 'memory' in checkpoint:
-                self.memory = deque(checkpoint['memory'], maxlen=self.memory.maxlen)
-            
+            self.q_network.load_state_dict(checkpoint)
+            self.target_network.load_state_dict(checkpoint)
+            self.optimizer = optim.Adam(self.q_network.parameters(), lr=learning_rate)
             print(f"Model loaded from {filename}")
         else:
             print(f"Model file {filename} not found, starting with random weights")
@@ -212,6 +204,7 @@ def normalize_state(state_dict):
         state_dict.get('enemyBearing', 0) / 180,  # Normalize enemy bearing
         state_dict.get('enemyDistance', 0) / 400,  # Normalize enemy distance
         state_dict.get('enemyHeading', 0) / 360,  # Normalize enemy heading
+        state_dict.get('enemyVelocity', 0) / 8,  # Normalize enemy velocity
         # state_dict.get('enemyX', 0) / 400,  # Normalize enemy x
         # state_dict.get('enemyY', 0) / 400,  # Normalize enemy y
     ])
