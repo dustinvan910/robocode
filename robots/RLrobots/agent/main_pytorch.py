@@ -36,7 +36,7 @@ import argparse
 import os
 # Parse command line arguments
 parser = argparse.ArgumentParser(description='Robot DQN Training')
-parser.add_argument('--play', type=bool, default=False, help='Play real robot', action='store_true')
+parser.add_argument('--play', type=bool, default=False, help='Play real robot')
 args = parser.parse_args()
 
 async def handle_robot(websocket):
@@ -69,7 +69,7 @@ async def handle_robot(websocket):
                         reward = 100 * (1 + playtime_quant)
                         win_episode += 1
                     else:
-                        reward = -500
+                        reward = -100
                         death_episode += 1
                     
                     agent.remember(

@@ -67,7 +67,6 @@ public class Proxy_Robot extends AdvancedRobot implements WebSocketClient.Messag
                 // if (robotAction.hasFired(pendingAction)) {
                 //     currentState.addReward(-2, "Fired gun");
                 // }
-
                 // currentState.addReward(-0.5, "Optimize for using less time");
                 if (getGunHeat() != 0 && robotAction.hasFired(pendingAction)) {
                     currentState.addReward(-5, "Fired hot gun");
@@ -76,16 +75,12 @@ public class Proxy_Robot extends AdvancedRobot implements WebSocketClient.Messag
                 if (pendingAction == robotAction.AIM) {
                     if (enemyDistance == 0) {
                         currentState.addReward(-5, "Aim Wrong");
-                    }
-                    
-                    // if (enemyDistance == 0) {
-                        // currentState.addReward(-5, "Aim Wrong");
-                    // } else {
+                    } else {
                         // double gunTurn = getHeading() - getGunHeading() + currentState.enemyBearing;
                         // if (gunTurn == 0) {
-                            // currentState.addReward(-5, "Already Aimed");
+                        currentState.addReward(5, "Already Aimed");
                         // }
-                    // }
+                    }
                 }
                 execute();
             }

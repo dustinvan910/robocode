@@ -54,7 +54,7 @@ class DQNAgent:
         self.memory = deque(maxlen=memory_size)
         self.batch_size = 64
         self.gamma = 0.99  # Discount factor
-        self.update_target_frequency = 1000
+        self.update_target_frequency = 100
         self.update_counter = 0
         
         # Device setup
