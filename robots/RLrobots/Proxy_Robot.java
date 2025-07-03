@@ -68,18 +68,25 @@ public class Proxy_Robot extends AdvancedRobot implements WebSocketClient.Messag
                 //     currentState.addReward(-2, "Fired gun");
                 // }
                 // currentState.addReward(-0.5, "Optimize for using less time");
-                if (getGunHeat() != 0 && robotAction.hasFired(pendingAction)) {
-                    currentState.addReward(-5, "Fired hot gun");
+                if (getGunHeat() == 0 && robotAction.hasFired(pendingAction)) {
+                    currentState.addReward(5, "Fired correctly");
                 }
 
+                 if (getGunHeat() != 0 && robotAction.hasFired(pendingAction)) {
+                    currentState.addReward(-1, "Fired hot gun");
+                }
+
+                currentState.addReward(-2, "Taking time");
+            
                 if (pendingAction == robotAction.AIM) {
                     if (enemyDistance == 0) {
                         currentState.addReward(-5, "Aim Wrong");
                     } else {
-                        // double gunTurn = getHeading() - getGunHeading() + currentState.enemyBearing;
-                        // if (gunTurn == 0) {
-                        currentState.addReward(5, "Already Aimed");
-                        // }
+                        double gunTurn = getHeading() - getGunHeading() + currentState.enemyBearing;
+                        if (gunTurn == 0) {
+                            currentState.addReward(-5, "Already Aimed");
+                        }
+                        currentState.addReward(3, "Aimed Right");
                     }
                 }
                 execute();
@@ -124,7 +131,7 @@ public class Proxy_Robot extends AdvancedRobot implements WebSocketClient.Messag
 
     public void onBulletHit(BulletHitEvent e) {
         // Robot hit enemy
-        this.currentState.addReward(10, "Hit enemy");
+        this.currentState.addReward(20, "Hit enemy");
     }
     
     // public void onBulletHitBullet(BulletHitBulletEvent e) {
@@ -140,8 +147,8 @@ public class Proxy_Robot extends AdvancedRobot implements WebSocketClient.Messag
     
     public void onBulletMissed(BulletMissedEvent e) {
         // Robot's bullet missed the target
-        // debug("Bullet missed");
-        this.currentState.addReward(-2, "Bullet missed");
+        debug("Bullet missed");
+        this.currentState.addReward(-5, "Bullet missed");
     }
     
     public void onHitWall(HitWallEvent e) {
