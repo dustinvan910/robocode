@@ -31,7 +31,7 @@ class DQNetwork(nn.Module):
 
 class DQNAgent:
     def __init__(self, state_size=11, action_size=8, learning_rate=0.015, epsilon=1, 
-                 epsilon_min=0.05, epsilon_decay=0.999995, memory_size=30_000, device='auto'):
+                 epsilon_min=0.01, epsilon_decay=0.999998, memory_size=30_000, device='auto'):
         """
         Initialize DQN Agent
         

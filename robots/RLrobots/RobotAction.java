@@ -13,16 +13,16 @@ public class RobotAction {
     
 
 
-    public static final int DO_NOTHING = 0;
-    public static final int RUN_AWAY_RIGHT = 1;
-    public static final int RUN_AWAY_LEFT = 2;
-    public static final int RUN_AWAY_BACK = 3;
-    public static final int RUN_AHEAD = 4;
-    public static final int FIRE_1 = 5;
-    public static final int FIRE_2 = 6;
-    public static final int FIRE_3 = 7;
-    public static final int AIM = 8;
-    public static final int TURN_LEFT = 99;
+    public static final int DO_NOTHING = 1000;
+    public static final int RUN_AWAY_RIGHT = 0;
+    public static final int RUN_AWAY_LEFT = 1;
+    public static final int RUN_AWAY_BACK = 2;
+    public static final int RUN_AHEAD = 3;
+    public static final int FIRE_1 = 4;
+    public static final int FIRE_2 = 5;
+    public static final int FIRE_3 = 6;
+    public static final int AIM = 7;
+    public static final int TURN_LEFT = 88;
     public static final int TURN_RIGHT = 100;
     
     public int radar_direction = 1;
@@ -105,11 +105,11 @@ public class RobotAction {
     public void doNothing() {}
 
     public void runAwayRight() {
-        robot.setTurnRight(robot.currentState.heading + 45);  
+        robot.setTurnRight(45);  
     }   
 
     public void runAwayLeft() {
-        robot.setTurnRight(robot.currentState.heading - 45);   
+        robot.setTurnLeft(45);   
     }
 
     public void runAwayBack() {
@@ -121,15 +121,15 @@ public class RobotAction {
     }
 
     public void fire1() {
-        robot.fire(1);
+        robot.setFire(1);
     }
 
     public void fire2() {
-        robot.fire(2);
+        robot.setFire(2);
     }
 
     public void fire3() {
-        robot.fire(3);
+        robot.setFire(3);
     }
 
     public void aim() {
