@@ -19,11 +19,11 @@ public class RobotAction {
     public static final int RUN_AWAY_BACK = 2;
     public static final int RUN_AHEAD = 3;
     public static final int FIRE_1 = 4;
-    public static final int FIRE_2 = 66;
-    public static final int FIRE_3 = 77;
-    public static final int AIM = 5;
-    public static final int TURN_LEFT = 99;
-    public static final int TURN_RIGHT = 100;
+    public static final int FIRE_2 = 5;
+    public static final int FIRE_3 = 6;
+    public static final int AIM = 7;
+    public static final int TURN_LEFT = 8;
+    public static final int TURN_RIGHT = 9;
     
     public int radar_direction = 1;
 
