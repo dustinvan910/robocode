@@ -17,7 +17,7 @@ public class RobotState {
     public double enemyX;
     public double enemyY;
     public double enemyVelocity;
-    
+
     public long reward;
     public long time;
 
@@ -71,14 +71,47 @@ public class RobotState {
         this.reward += reward;
     }
     
+    public boolean isRadarOnTarget() {
+        if (this.enemyDistance != 0) {
+            return true;
+        }
+        return false;
+    }
+
+    double normalizeBearing(double angle) {
+        while (angle >  180) angle -= 360;
+        while (angle < -180) angle += 360;
+        return angle;
+    }
+
+    public boolean isGunOnTarget() {
+        if (this.isRadarOnTarget()) {
+            double gunTurn = this.heading - this.gunHeading + this.enemyBearing;
+            // System.out.println("Gun Turn " + gunTurn);
+            if (Math.abs(normalizeBearing(gunTurn)) < 1) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public String toJson() {
+        int radarOnTarget = 0;
+        int gunOnTarget = 0;
+        if (this.isRadarOnTarget()) {
+            radarOnTarget = 1;
+        }
+        if (this.isGunOnTarget()) {
+            gunOnTarget = 1;
+        }
+        
         return String.format(
             "{\"x\":%.2f,\"y\":%.2f,\"heading\":%.2f,\"energy\":%.2f,\"gunHeading\":%.2f,\"gunHeat\":%.2f," +
             "\"velocity\":%.2f,\"distanceRemaining\":%.2f," +
             "\"enemyBearing\":%.2f,\"enemyDistance\":%.2f,\"enemyHeading\":%.2f," +
-            "\"enemyX\":%.2f,\"enemyY\":%.2f,\"enemyVelocity\":%.2f,\"reward\":%d}",
+            "\"enemyX\":%.2f,\"enemyY\":%.2f,\"enemyVelocity\":%.2f,\"reward\":%d,\"gunOnTarget\":%d,\"radarOnTarget\":%d}",
             x, y, heading, energy, gunHeading, gunHeat, velocity, distanceRemaining,
-            enemyBearing, enemyDistance, enemyHeading, enemyX, enemyY, enemyVelocity, reward
+            enemyBearing, enemyDistance, enemyHeading, enemyX, enemyY, enemyVelocity, reward, gunOnTarget, radarOnTarget
         );
     }
 }

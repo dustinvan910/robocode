@@ -3,9 +3,10 @@ import websockets
 import json
 import numpy as np
 from dqn_agent_pytorch import DQNAgent, normalize_state
+import traceback
 
 # Initialize PyTorch DQN agent
-agent = DQNAgent(state_size=12, action_size=6, learning_rate=0.002)
+agent = DQNAgent(state_size=8, action_size=8, learning_rate=0.002)
 agent.load_model(learning_rate=0.002, filename='dqn_model_pytorch.pth')  # Load existing model if available
 
 # Global state tracking
@@ -21,6 +22,51 @@ win_episode = 0
 death_episode = 0
 play_time = 0
 optimal_actions = []
+
+# State statistics tracking
+state_stats = {
+    'x': {'min': float('inf'), 'max': float('-inf'), 'count': 0},
+    'y': {'min': float('inf'), 'max': float('-inf'), 'count': 0},
+    'heading': {'min': float('inf'), 'max': float('-inf'), 'count': 0},
+    'energy': {'min': float('inf'), 'max': float('-inf'), 'count': 0},
+    'gunHeading': {'min': float('inf'), 'max': float('-inf'), 'count': 0},
+    'gunHeat': {'min': float('inf'), 'max': float('-inf'), 'count': 0},
+    'velocity': {'min': float('inf'), 'max': float('-inf'), 'count': 0},
+    'distanceRemaining': {'min': float('inf'), 'max': float('-inf'), 'count': 0},
+    'enemyBearing': {'min': float('inf'), 'max': float('-inf'), 'count': 0},
+    'enemyDistance': {'min': float('inf'), 'max': float('-inf'), 'count': 0},
+    'enemyHeading': {'min': float('inf'), 'max': float('-inf'), 'count': 0},
+    'enemyX': {'min': float('inf'), 'max': float('-inf'), 'count': 0},
+    'enemyY': {'min': float('inf'), 'max': float('-inf'), 'count': 0},
+    'enemyVelocity': {'min': float('inf'), 'max': float('-inf'), 'count': 0},
+    'reward': {'min': float('inf'), 'max': float('-inf'), 'count': 0},
+    'gunOnTarget': {'min': float('inf'), 'max': float('-inf'), 'count': 0},
+    'radarOnTarget': {'min': float('inf'), 'max': float('-inf'), 'count': 0}
+}
+
+def update_state_stats(state_data):
+    """Update min/max statistics for each state variable"""
+    for key, value in state_data.items():
+        if key in state_stats and isinstance(value, (int, float)):
+            if value < state_stats[key]['min']:
+                state_stats[key]['min'] = value
+            if value > state_stats[key]['max']:
+                state_stats[key]['max'] = value
+            state_stats[key]['count'] += 1
+
+def print_state_stats():
+    """Print current state statistics"""
+    print("\n=== State Statistics ===")
+    for key, stats in state_stats.items():
+        if stats['count'] > 0:
+            print(f"{key}: min={stats['min']:.2f}, max={stats['max']:.2f}, count={stats['count']}")
+    print("=======================\n")
+
+def save_state_stats():
+    """Save state statistics to file"""
+    with open('state_stats.json', 'w') as f:
+        json.dump(state_stats, f, indent=2)
+    print("State statistics saved to state_stats.json")
 
 # Training statistics
 training_stats = {
@@ -47,37 +93,36 @@ async def handle_robot(websocket):
     global current_state, previous_state, previous_action, episode_reward, episode_count, total_reward, training_losses, step_count, win_episode, death_episode, play_time, no_learning, optimal_actions
     
     try:
-        print("Robot connected")
+        print("Robot connected 3")
         async for message in websocket:
             try:
                 state_data = json.loads(message)
                 current_state = state_data
                 
+                # Update state statistics
+                update_state_stats(state_data)
+                
                 if 'play' in state_data:
                     no_learning = state_data.get('play', 0)
-                    return
-                
-                # Check if state_data contains 'test' key and run get_qvalue if it does
-                if args.play == True or no_learning == True:
-                    action = agent.get_optimal_action(normalize_state(state_data))
-                    await websocket.send(str(action))
                     continue
-                
-               
                 
                 if 'test' in state_data:
                     q_values = agent.get_q_values(normalize_state(state_data)).squeeze()
                     await websocket.send(str(q_values.tolist()))
                     return
                 
+                
+
                 if 'isWin' in state_data:
+                    if args.play == True or no_learning == True:
+                        return
                     play_time = state_data.get('time')
                     reward = 0
                     if state_data.get('isWin'):
-                        reward = 100 
+                        reward = 1000
                         win_episode += 1
                     else:
-                        reward = -100
+                        reward = -1000
                         death_episode += 1
                     
                     agent.remember(
@@ -89,11 +134,12 @@ async def handle_robot(websocket):
                     )
                     episode_reward+=reward
                     return
-                
-                # if state_data.get('reward', 0) >= 100 or state_data.get('reward', 0) <= -100:
-                #     await websocket.close()
-                #     print("Robot disconnected")
-                #     return
+
+                # Check if state_data contains 'test' key and run get_qvalue if it does
+                if args.play == True or no_learning == True:
+                    action = agent.get_optimal_action(normalize_state(state_data))
+                    await websocket.send(str(action))
+                    continue
                 
                 # # Normalize state for neural network
                 normalized_state = normalize_state(state_data)
@@ -141,11 +187,14 @@ async def handle_robot(websocket):
                 continue
             except Exception as e:
                 print(f"Error processing message: {e}")
+                print(f"Traceback: {traceback.format_exc()}")
                 continue
     except Exception as e:
+        import traceback
         print(f"Error: {e}")
+        print(f"Traceback: {traceback.format_exc()}")
     finally:
-        # print("Client disconnected. Final cleanup")
+        print("Client disconnected. Final cleanup")
         # End episode
         if args.play == True or no_learning == True:
             return
@@ -177,6 +226,10 @@ async def handle_robot(websocket):
             
             print(f"Episode {episode_count} ended with reward: {episode_reward:.2f}, play_time: {play_time}")
             print(f"Optimal actions: {optimal_action_counts}")
+            
+            # Print state statistics every 10 episodes
+            # if episode_count % 10 == 0:
+            #     print_state_stats()
             
             # Reset episode variables
             episode_reward = 0

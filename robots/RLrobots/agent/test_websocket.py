@@ -42,7 +42,7 @@ async def test_robot_communication():
             print("Connected to robot server")
             
             # Send a test message to trigger Q-value response
-            test_state = {"test":True, 'x': 301.01, 'y': 173.9, 'heading': 114.36, 'energy': 102.2, 'gunHeading': 239.83, 'gunHeat': 0, 'velocity': 0.0, 'distanceRemaining': 0.0, 'enemyBearing': 0.0, 'enemyDistance': 100, 'enemyHeading': 0.0, 'enemyX': 0.0, 'enemyY': 0.0} 
+            test_state = {"play":True, 'x': 301.01, 'y': 173.9, 'heading': 114.36, 'energy': 102.2, 'gunHeading': 239.83, 'gunHeat': 0, 'velocity': 0.0, 'distanceRemaining': 0.0, 'enemyBearing': 0.0, 'enemyDistance': 100, 'enemyHeading': 0.0, 'enemyX': 0.0, 'enemyY': 0.0} 
             
             await websocket.send(json.dumps(test_state))
             print("Sent test state")

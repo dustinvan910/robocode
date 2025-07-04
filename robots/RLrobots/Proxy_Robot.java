@@ -45,6 +45,15 @@ public class Proxy_Robot extends AdvancedRobot implements WebSocketClient.Messag
                 this.currentState.updateRobotState(getX(), getY(), getHeading(), getEnergy(), getGunHeading(), getGunHeat(), getVelocity(), getDistanceRemaining());
                 webSocket.sendMessage(this.currentState.toJson());              
 
+
+                
+                double enemyDistance = this.currentState.enemyDistance;
+                double enemyBearing = this.currentState.enemyBearing;
+                boolean gunOnTarget = this.currentState.isGunOnTarget();
+                boolean radarOnTarget = this.currentState.isRadarOnTarget();
+                double gunTurn = getHeading() - getGunHeading() + enemyBearing;
+                double gunHeat = getGunHeat();
+
                 while (!actionReady) { 
                     try {
                         Thread.sleep(1);
@@ -53,42 +62,46 @@ public class Proxy_Robot extends AdvancedRobot implements WebSocketClient.Messag
                         break;
                     }
                 }
-
+                
                 if (actionReady) {
                     robotAction.executeAction(pendingAction);
                     actionReady = false; 
                 }
                 
-                
-                double enemyDistance = this.currentState.enemyDistance;
-                
                 this.currentState = new RobotState(getTime());
 
-                // if (robotAction.hasFired(pendingAction)) {
-                //     currentState.addReward(-2, "Fired gun");
-                // }
-                // currentState.addReward(-0.5, "Optimize for using less time");
-                if (getGunHeat() == 0 && robotAction.hasFired(pendingAction)) {
-                    currentState.addReward(5, "Fired correctly");
-                }
+                currentState.addReward(-3, "Taking time");
 
-                 if (getGunHeat() != 0 && robotAction.hasFired(pendingAction)) {
-                    currentState.addReward(-1, "Fired hot gun");
-                }
+                int firePower = robotAction.isFired(pendingAction);
+                if  (firePower > 0) {
+                    System.out.println("Fire " + (gunHeat) + " " + firePower);    
+                    if (gunHeat!=0) {
+                        currentState.addReward(-5, "Fired hot gun");
+                    } else {
+                         currentState.addReward(-firePower + 3, "Fire");
+                    }
 
-                currentState.addReward(-2, "Taking time");
+                    if (enemyDistance != 0 && Math.abs(normalizeBearing(gunTurn)) < 1) {
+                        System.out.println("Fire Right");
+                        currentState.addReward(10, "Fire Right");
+                    } else {
+                        System.out.println("Fire Wrong");
+                    }
+                }
             
                 if (pendingAction == robotAction.AIM) {
-                    if (enemyDistance == 0) {
-                        currentState.addReward(-5, "Aim Wrong");
+                    if (!radarOnTarget) {
+                        System.out.println("Aim Wrong");
+                        currentState.addReward(-2, "Aim Wrong");
                     } else {
-                        double gunTurn = getHeading() - getGunHeading() + currentState.enemyBearing;
-                        if (gunTurn == 0) {
+                        if (gunOnTarget) {
+                            System.out.println("Already Aimed");
                             currentState.addReward(-5, "Already Aimed");
                         }
                         currentState.addReward(3, "Aimed Right");
                     }
                 }
+
                 execute();
             }
 
@@ -131,7 +144,9 @@ public class Proxy_Robot extends AdvancedRobot implements WebSocketClient.Messag
 
     public void onBulletHit(BulletHitEvent e) {
         // Robot hit enemy
-        this.currentState.addReward(20, "Hit enemy");
+        double bulletPower = e.getBullet().getPower();
+        int reward = (int)(bulletPower * 10); // Scale reward based on bullet power
+        this.currentState.addReward(reward, "Hit enemy with power " + bulletPower);
     }
     
     // public void onBulletHitBullet(BulletHitBulletEvent e) {
@@ -147,14 +162,16 @@ public class Proxy_Robot extends AdvancedRobot implements WebSocketClient.Messag
     
     public void onBulletMissed(BulletMissedEvent e) {
         // Robot's bullet missed the target
-        debug("Bullet missed");
-        this.currentState.addReward(-5, "Bullet missed");
+        // debug("Bullet missed");
+        double bulletPower = e.getBullet().getPower();
+        int reward = (int)(bulletPower * 2); // Scale reward based on bullet power
+        this.currentState.addReward(-reward, "Bullet missed");
     }
     
     public void onHitWall(HitWallEvent e) {
         // Robot hit the wall
         // debug("Hit wall");
-        this.currentState.addReward(-5, "Hit wall");
+        this.currentState.addReward(-1, "Hit wall");
     }
     
     public void onHitByBullet(HitByBulletEvent e) {

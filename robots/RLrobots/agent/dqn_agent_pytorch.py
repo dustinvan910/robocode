@@ -31,7 +31,7 @@ class DQNetwork(nn.Module):
 
 class DQNAgent:
     def __init__(self, state_size=11, action_size=8, learning_rate=0.015, epsilon=1, 
-                 epsilon_min=0.05, epsilon_decay=0.999995, memory_size=30_000, device='auto'):
+                 epsilon_min=0.01, epsilon_decay=0.999999, memory_size=50_000, device='auto'):
         """
         Initialize DQN Agent
         
@@ -54,7 +54,7 @@ class DQNAgent:
         self.memory = deque(maxlen=memory_size)
         self.batch_size = 64
         self.gamma = 0.99  # Discount factor
-        self.update_target_frequency = 100
+        self.update_target_frequency = 50
         self.update_counter = 0
         
         # Device setup
@@ -88,7 +88,7 @@ class DQNAgent:
     
     def get_optimal_action(self, state):
         state_tensor = torch.FloatTensor(state).unsqueeze(0).to(self.device)
-        q_values = self.q_network(state_tensor)
+        q_values = self.target_network(state_tensor)
         return q_values.argmax().item()
     
     def act(self, state):
@@ -150,7 +150,7 @@ class DQNAgent:
     def load_model(self, filename='dqn_model_pytorch.pth', learning_rate=0.0005):
         """Load model weights and optimizer state"""
         if os.path.exists(filename):
-            checkpoint = torch.load(filename, map_location=self.device)
+            checkpoint = torch.load(filename, map_location=self.device, weights_only=True)
             self.q_network.load_state_dict(checkpoint)
             self.target_network.load_state_dict(checkpoint)
             self.optimizer = optim.Adam(self.q_network.parameters(), lr=learning_rate)
@@ -159,52 +159,36 @@ class DQNAgent:
             print(f"Model file {filename} not found, starting with random weights")
 
 
-# Feature tracking for normalization analysis
-feature_stats = {
-    'x': {'min': float('inf'), 'max': float('-inf')},
-    'y': {'min': float('inf'), 'max': float('-inf')},
-    'heading': {'min': float('inf'), 'max': float('-inf')},
-    'energy': {'min': float('inf'), 'max': float('-inf')},
-    'gunHeat': {'min': float('inf'), 'max': float('-inf')},
-    'velocity': {'min': float('inf'), 'max': float('-inf')},
-    'distanceRemaining': {'min': float('inf'), 'max': float('-inf')},
-    'enemyBearing': {'min': float('inf'), 'max': float('-inf')},
-    'enemyDistance': {'min': float('inf'), 'max': float('-inf')},
-    'enemyHeading': {'min': float('inf'), 'max': float('-inf')},
-}
 
 def normalize_state(state_dict):
     """Normalize state values for better neural network performance"""
-    # Update feature statistics
-    # for feature in feature_stats:
-    #     value = state_dict.get(feature, 0)
-    #     feature_stats[feature]['min'] = min(feature_stats[feature]['min'], value)
-    #     feature_stats[feature]['max'] = max(feature_stats[feature]['max'], value)
     
-    # # Print stats every 100 calls (optional, for debugging)
-    # if hasattr(normalize_state, 'call_count'):
-    #     normalize_state.call_count += 1
-    # else:
-    #     normalize_state.call_count = 1
-    
-    # if normalize_state.call_count % 100 == 0:
-    #     print("Feature statistics:")
-    #     for feature, stats in feature_stats.items():
-    #         print(f"  {feature}: min={stats['min']:.2f}, max={stats['max']:.2f}")
-    
+    # Discretize continuous values for better learning
+    x_discrete = int(state_dict.get('x', 0) / 50)  # 8 discrete x positions
+    y_discrete = int(state_dict.get('y', 0) / 50)  # 8 discrete y positions
+    heading_discrete = int(state_dict.get('heading', 0) / 45)  # 8 discrete heading directions
+    gun_heading_discrete = int(state_dict.get('gunHeading', 0) / 45)  # 8 discrete gun directions
+    gun_heat_discrete = int(state_dict.get('gunHeat', 0))  # 3 discrete gun heat levels (0, 1, 2+)
+    energy_discrete = int(state_dict.get('energy', 0) / 10 )  # 10 discrete energy levels
+    enemy_distance_discrete =  int(state_dict.get('enemyDistance', 0) / 50 )
+
     state = np.array([
-        state_dict.get('x', 0) / 400,  # Normalize x position
-        state_dict.get('y', 0) / 400,  # Normalize y position
-        state_dict.get('heading', 0) / 360,  # Normalize heading
-        state_dict.get('energy', 0) / 100,  # Normalize energy
-        state_dict.get('gunHeat', 0) / 3,  # Normalize gun heat
-        state_dict.get('gunHeading', 0) / 360,  # Normalize gun heading
-        state_dict.get('velocity', 0) / 8,  # Normalize velocity
-        state_dict.get('distanceRemaining', 0) / 100,  # Normalize distance remaining
-        state_dict.get('enemyBearing', 0) / 180,  # Normalize enemy bearing
-        state_dict.get('enemyDistance', 0) / 400,  # Normalize enemy distance
-        state_dict.get('enemyHeading', 0) / 360,  # Normalize enemy heading
-        state_dict.get('enemyVelocity', 0) / 8,  # Normalize enemy velocity
+        x_discrete / 8,  # Discrete x position
+        y_discrete / 8,  # Discrete y position
+        energy_discrete / 10,  # Normalize energy
+        gun_heat_discrete / 3,  # Discrete gun heat
+        enemy_distance_discrete / 12,  # Normalize enemy distance
+        state_dict.get('distanceRemaining', 0) / 100,  
+        state_dict.get('gunOnTarget', 0),  # Normalize heading
+        state_dict.get('radarOnTarget', 0) ,  # Normalize heading
+
+        # state_dict.get('heading', 0) / 360,  # Normalize heading
+        # state_dict.get('gunHeading', 0) / 360,  # Normalize gun heading
+        # state_dict.get('velocity', 0) / 8,  # Normalize velocity
+
+        # state_dict.get('enemyBearing', 0) / 180,  # Normalize enemy bearing
+        # state_dict.get('enemyHeading', 0) / 360,  # Normalize enemy heading
+        # state_dict.get('enemyVelocity', 0) / 8,  # Normalize enemy velocity
         # state_dict.get('enemyX', 0) / 400,  # Normalize enemy x
         # state_dict.get('enemyY', 0) / 400,  # Normalize enemy y
     ])
