@@ -33,11 +33,17 @@ public class RobotAction {
         this.robot = robot;
     }
 
-    public boolean hasFired(int action){
-        if (action == FIRE_1 || action == FIRE_2 || action == FIRE_3) {
-            return true;
+    public int isFired(int action){
+        if (action == FIRE_1) {
+            return 1;
         }
-        return false;
+        if (action == FIRE_2) {
+            return 2;
+        }
+        if (action == FIRE_3) {
+            return 3;
+        }
+        return 0;
     }
 
     public void debug(String message) {
@@ -105,11 +111,13 @@ public class RobotAction {
     public void doNothing() {}
 
     public void runAwayRight() {
-        robot.setTurnRight(45);  
+        robot.setTurnRight(90);  
+        robot.setAhead(50);
     }   
 
     public void runAwayLeft() {
-        robot.setTurnLeft(45);   
+        robot.setTurnLeft(90);   
+        robot.setAhead(50);
     }
 
     public void runAwayBack() {

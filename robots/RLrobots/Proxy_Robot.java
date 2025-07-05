@@ -73,11 +73,11 @@ public class Proxy_Robot extends AdvancedRobot implements WebSocketClient.Messag
                 // currentState.addReward(-0.5, "Optimize for using less time");
                 currentState.addReward(-3, "Do nothing");
 
-                if (robotAction.hasFired(pendingAction)) {
+                if (robotAction.isFired(pendingAction) != 0) {
                     if (gunHeat != 0) {
                         currentState.addReward(-5, "Fired hot gun");
                     } else {
-                        if (gunTurn == 0) {
+                        if (gunTurn == 0) { // 
                             currentState.addReward(5, "Fired cold gun");
                         } else {
                             currentState.addReward(3, "Fired cold gun");
@@ -89,7 +89,7 @@ public class Proxy_Robot extends AdvancedRobot implements WebSocketClient.Messag
                     if (enemyDistance == 0) {
                         currentState.addReward(-5, "Aim Wrong");
                     } else {
-                        if (gunTurn != 0) {
+                        if (gunTurn != 0) { 
                             currentState.addReward(5, "Aimed Right");
                         } 
                     }
@@ -136,7 +136,9 @@ public class Proxy_Robot extends AdvancedRobot implements WebSocketClient.Messag
 
     public void onBulletHit(BulletHitEvent e) {
         // Robot hit enemy
-        this.currentState.addReward(10, "Hit enemy");
+        double bulletPower = e.getBullet().getPower();
+        int reward = (int)(bulletPower * 10); // Scale reward based on bullet power
+        this.currentState.addReward(reward, "Hit enemy with power " + bulletPower);
     }
     
     // public void onBulletHitBullet(BulletHitBulletEvent e) {
