@@ -19,6 +19,7 @@ public class Proxy_Robot extends AdvancedRobot implements WebSocketClient.Messag
     public RobotAction robotAction = new RobotAction(this);
     // Store pending action to execute in main robot thread
     private volatile int pendingAction = -1;
+    private volatile double pendingValue = 0.0;
     private volatile boolean actionReady = false;
     
     public boolean isEnded = false;
@@ -32,6 +33,7 @@ public class Proxy_Robot extends AdvancedRobot implements WebSocketClient.Messag
             // Connect to Python server via WebSocket
             webSocket  = new WebSocketClient();
             webSocket.setMessageHandler(this);
+            webSocket.sendMessage("{\"gameStart\": false, \"time\": " + getTime() + "}");
             setAdjustGunForRobotTurn(true);
 	        setAdjustRadarForGunTurn(true);
             this.currentState = new RobotState(getTime());
@@ -55,7 +57,8 @@ public class Proxy_Robot extends AdvancedRobot implements WebSocketClient.Messag
                 }
 
                 if (actionReady) {
-                    robotAction.executeAction(pendingAction);
+                    debug("Executing action: " + pendingAction + " with value: " + pendingValue);
+                    robotAction.executeAction(pendingAction, pendingValue);
                     actionReady = false; 
                 }
                 
@@ -106,7 +109,46 @@ public class Proxy_Robot extends AdvancedRobot implements WebSocketClient.Messag
     // Implement the MessageHandler interface
 	@Override
 	public void handleMessage(String message) {
-        setPendingAction(Integer.parseInt(message));
+        try {
+            // Parse JSON message from Python PPO agent
+            // Expected format: {"action": 3, "action_prob": 0.25, "value": 0.5}
+            if (message.trim().startsWith("{")) {
+                // JSON format - extract action and value
+                int actionStart = message.indexOf("\"action\":") + 9;
+                int actionEnd = message.indexOf(",", actionStart);
+                if (actionEnd == -1) {
+                    actionEnd = message.indexOf("}", actionStart);
+                }
+                String actionStr = message.substring(actionStart, actionEnd).trim();
+                
+                // Extract value if present
+                double value = 0.0;
+                int valueStart = message.indexOf("\"value\":");
+                if (valueStart != -1) {
+                    valueStart += 8;
+                    int valueEnd = message.indexOf(",", valueStart);
+                    if (valueEnd == -1) {
+                        valueEnd = message.indexOf("}", valueStart);
+                    }
+                    String valueStr = message.substring(valueStart, valueEnd).trim();
+                    try {
+                        value = Double.parseDouble(valueStr);
+                    } catch (NumberFormatException e) {
+                        System.out.println("Error parsing value: " + valueStr);
+                        value = 0.0;
+                    }
+                }
+                System.out.println("Action: " + actionStr + " Value: " + value);
+                setPendingActionAndValue(Integer.parseInt(actionStr), value);
+            } else {
+                // Legacy format - direct integer
+                setPendingActionAndValue(Integer.parseInt(message), 0.0);
+            }
+        } catch (Exception e) {
+            System.out.println("Error parsing action message: " + message + " - " + e.getMessage());
+            // Default to no action (0) if parsing fails
+            setPendingActionAndValue(0, 0.0);
+        }
     }
 
     public void onScannedRobot(ScannedRobotEvent e) {
@@ -121,10 +163,16 @@ public class Proxy_Robot extends AdvancedRobot implements WebSocketClient.Messag
         this.currentState.updateEnemyState(enemyBearing, enemyDistance, enemyHeading, enemyX, enemyY, enemyVelocity);
     }
     
-    // Modified handleMessage to set pending action instead of executing immediately
-    private void setPendingAction(int action) {
+    // Modified handleMessage to set pending action and value instead of executing immediately
+    private void setPendingActionAndValue(int action, double value) {
         this.pendingAction = action;
+        this.pendingValue = value;
         this.actionReady = true;
+    }
+    
+    // Legacy method for backward compatibility
+    private void setPendingAction(int action) {
+        setPendingActionAndValue(action, 0.0);
     }
 
 	

@@ -4,3 +4,9 @@ robots/RLrobots/.venv/
 javadoc/
 
 robots/RLrobots/agent/.venv/
+
+robots/RLrobots/ppo_agent/__pycache__/
+
+robots/RLrobots/ppo_agent/model/
+
+*.class

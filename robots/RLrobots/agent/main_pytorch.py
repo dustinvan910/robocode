@@ -111,13 +111,15 @@ async def handle_robot(websocket):
                     await websocket.send(str(q_values.tolist()))
                     return                
 
+                if 'gameStart' in state_data:
+                    continue
+
                 if 'isWin' in state_data:
                     if args.play == True or no_learning == True:
                         return
                     play_time = state_data.get('time')
                     reward = 0
                     if state_data.get('isWin'):
-                        playtime_quant = (100 - play_time) / 100
                         reward = 1000 
                         win_episode += 1
                     else:

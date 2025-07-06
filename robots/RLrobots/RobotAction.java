@@ -50,7 +50,7 @@ public class RobotAction {
         System.out.println(message);
     }
 
-    public void executeAction(int action) {
+    public void executeAction(int action, double value) {
         switch (action) {
             case DO_NOTHING:
                 debug("Executing action: " + action + " (doNothing)");
@@ -58,19 +58,19 @@ public class RobotAction {
                 break;
             case RUN_AWAY_RIGHT:
                 debug("Executing action: " + action + " (runAwayRight)");
-                runAwayRight();
+                runAwayRight(value);
                 break;  
             case RUN_AWAY_LEFT:
                 debug("Executing action: " + action + " (runAwayLeft)");
-                runAwayLeft();
+                runAwayLeft(value);
                 break;
             case RUN_AWAY_BACK:
                 debug("Executing action: " + action + " (runAwayBack)");
-                runAwayBack();
+                runAwayBack(value);
                 break;
             case RUN_AHEAD:
                 debug("Executing action: " + action + " (runAhead)");
-                runAhead();
+                runAhead(value);
                 break;
             case FIRE_1:
                 debug("Executing action: " + action + " (fire1)");
@@ -110,22 +110,20 @@ public class RobotAction {
 
     public void doNothing() {}
 
-    public void runAwayRight() {
-        robot.setTurnRight(90);  
-        robot.setAhead(50);
+    public void runAwayRight(double value) {
+        robot.setTurnRight(normalizeBearing(value * 360)); 
     }   
 
-    public void runAwayLeft() {
-        robot.setTurnLeft(90);   
-        robot.setAhead(50);
+    public void runAwayLeft(double value) {
+        robot.setTurnLeft(normalizeBearing(value * 360));   
     }
 
-    public void runAwayBack() {
-        robot.setAhead(-50);
+    public void runAwayBack(double value) {
+        robot.setAhead(-value * 400);
     }
 
-    public void runAhead() {
-        robot.setAhead(50);
+    public void runAhead(double value) {
+        robot.setAhead(value * 400);
     }
 
     public void fire1() {

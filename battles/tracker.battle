@@ -1,0 +1,10 @@
+#Battle Properties
+#Fri Jul 04 12:33:01 PDT 2025
+robocode.battle.numRounds=100000
+robocode.battle.rules.inactivityTime=450
+robocode.battle.hideEnemyNames=false
+robocode.battle.gunCoolingRate=0.1
+robocode.battleField.height=400
+robocode.battleField.width=400
+robocode.battle.sentryBorderSize=100
+robocode.battle.selectedRobots=RLrobots.Proxy_Robot*,sample.Tracker
