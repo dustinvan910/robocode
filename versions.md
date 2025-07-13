@@ -1,17 +1,43 @@
+## Version 1.10.0 (04-Jun-2025)
+
+Robocode's code around `RobocodeSecurityManager` has been refactored to ensure compatibility with Java 24 and newer
+versions, even after the retirement of the Security Manager in Java 24.
+[Read more here](https://inside.java/2024/12/11/quality-heads-up/).  
+Additionally, Robocode remains fully functional on older Java versions, from Java 8 onward.
+
+### Changes
+
+- **Java 24 support**: Implemented new security mechanisms that work with Java 24+ while maintaining compatibility with
+  Java 8+.
+- **Versioning update**: Adopted [Semantic Versioning](https://semver.org/) starting with version **1.10.0**.
+
+## Version 1.9.5.6 (30-May-2025)
+
+### Bugfix
+
+[Lim Sim Yee](https://github.com/simei2k) found and fixed the following vulnerabilities. Thank you for the PRs ❤️
+
+Vulnerabilities fixes:
+
+* #67: The CacheCleaner contained a Directory Traversal Vulnerability when deleting files (recursively).
+* #68: Fix for Insecure Temporary File Creation.
+* #70: Fix Integer Overflow Vulnerability in Buffer Write Method.
+
 ## Version 1.9.5.5 (29-Mar-2025)
 
 ### Changes
 
-* Robocode cannot run with Java 24, which
-  implemented [JEP 486: Permanently Disable the Security Manager](https://openjdk.org/jeps/486).
-    * Robocode has its own security manager built on top of Java's Security Manager, which has now been removed with
-      Java 24.
-    * Robocode will not start up when running Robocode on Java 24 and newer. Instead, an error message is written out
-      that Robocode does not support Java 24.
-    * Fixing this issue requires a big rewrite of large parts of the security mechanisms in Robocode to prevent robots
-      from doing harm on the system and from cheating against other competitor robots in battles.
-    * Use Java 23 or an older version of Java instead, or head over to the new platform for Robocode:
-      [Robocode Tank Royale](https://github.com/robocode-dev/tank-royale).
+Robocode cannot run with Java 24, which
+implemented [JEP 486: Permanently Disable the Security Manager](https://openjdk.org/jeps/486).
+
+* Robocode has its own security manager built on top of Java's Security Manager, which has now been removed with
+  Java 24.
+* Robocode will not start up when running Robocode on Java 24 and newer. Instead, an error message is written out
+  that Robocode does not support Java 24.
+* Fixing this issue requires a big rewrite of large parts of the security mechanisms in Robocode to prevent robots
+  from doing harm on the system and from cheating against other competitor robots in battles.
+* Use Java 23 or an older version of Java instead, or head over to the new platform for Robocode:
+  [Robocode Tank Royale](https://github.com/robocode-dev/tank-royale).
 
 ## Version 1.9.5.4 (30-Sep-2024)
 

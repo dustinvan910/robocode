@@ -2,6 +2,7 @@ package RLrobots;
 
 import javax.websocket.*;
 import java.net.URI;
+import java.nio.ByteBuffer;
 
 @ClientEndpoint
 public class WebSocketClient {
@@ -46,6 +47,12 @@ public class WebSocketClient {
     @OnClose
     public void onClose(Session session, CloseReason reason) {
         System.out.println("Connection closed xxx: " + reason);
+    }
+
+    public void sendBinaryMessage(ByteBuffer message) {
+        if (session != null && session.isOpen()) {
+            session.getAsyncRemote().sendBinary(message);
+        }
     }
 
     public void sendMessage(String message) {
