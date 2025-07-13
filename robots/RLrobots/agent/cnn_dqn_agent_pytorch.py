@@ -17,7 +17,7 @@ from stable_baselines3.common.buffers import ReplayBuffer
 
 
 class CNNNetwork(nn.Module):
-    def __init__(self, image_channels=4, action_size=8, hidden_size=256):
+    def __init__(self, image_channels=4, action_size=8, hidden_size=512):
         super().__init__()
         self.network = nn.Sequential(
             nn.Conv2d(image_channels, 32, 8, stride=4),
@@ -27,17 +27,17 @@ class CNNNetwork(nn.Module):
             nn.Conv2d(64, 64, 3, stride=1),
             nn.ReLU(),
             nn.Flatten(),
-            nn.Linear(3136, 512),
+            nn.Linear(64*7*7, hidden_size),
             nn.ReLU(),
-            nn.Linear(512, action_size),
+            nn.Linear(hidden_size, action_size),
         )
 
     def forward(self, x):
         return self.network(x / 255.0)
 
 class CNNDQNAgent:
-    def __init__(self, image_channels=4, action_size=8, learning_rate=0.0015, epsilon=1, 
-                 epsilon_min=0.01, epsilon_decay=0.9, memory_size=20_000, device='auto'):
+    def __init__(self, image_channels=4, image_size=128, action_size=8, learning_rate=0.0015, epsilon_max=1, 
+                 epsilon_min=0.01, epsilon_decay=0.9, memory_size=50_000, device='auto'):
         """
         Initialize CNN DQN Agent for 4-channel image input
         
@@ -53,14 +53,16 @@ class CNNDQNAgent:
         """
         self.image_channels = image_channels
         self.action_size = action_size
-        self.epsilon = epsilon
+        self.epsilon = epsilon_max
         self.epsilon_min = epsilon_min
+        self.epsilon_max = epsilon_max
+
         self.epsilon_decay = epsilon_decay
         self.learning_rate = learning_rate
         
         self.batch_size = 32  # Reduced batch size for image processing
         self.gamma = 0.99  # Discount factor
-        self.update_target_frequency = 100
+        self.update_target_frequency = 1000
         self.update_counter = 0
         
         # Device setup
@@ -70,9 +72,9 @@ class CNNDQNAgent:
             self.device = torch.device(device)
         
         # Define observation and action spaces for ReplayBuffer
-        # Observation space: 4-channel image (4, 84, 84)
+        # Observation space: 4-channel image (4, 128, 128)
         self.observation_space = gym.spaces.Box(
-            low=0, high=255, shape=(image_channels, 84, 84), dtype=np.uint8
+            low=0, high=255, shape=(image_channels, image_size, image_size), dtype=np.uint8
         )
         
         # Action space: discrete actions (0 to action_size-1)
@@ -135,9 +137,8 @@ class CNNDQNAgent:
     
     def replay(self):
         """Train the network on a batch of experiences"""
-        
-
-        if self.update_counter < self.batch_size:
+        start_learning = self.batch_size*300
+        if self.update_counter < start_learning:
             return
         
         t1 = time.time()
@@ -158,10 +159,8 @@ class CNNDQNAgent:
         # torch.nn.utils.clip_grad_norm_(self.q_network.parameters(), max_norm=1.0)
         self.optimizer.step()
 
-
-
         t3 = time.time()
-        print(f"Time taken to update optimizer: {t3 - t1}")
+        print(f"Time taken to update optimizer: {t3 - t1}", self.update_counter, self.epsilon)
         # Update target network
         
         if self.update_counter % self.update_target_frequency == 0:
@@ -170,7 +169,7 @@ class CNNDQNAgent:
         # Decay epsilon
         # if self.epsilon > self.epsilon_min:
         #     self.epsilon *= self.epsilon_decay
-        self.epsilon = self.linear_schedule(self.epsilon, self.epsilon_min, 10000000*0.1, self.update_counter)
+        self.epsilon = self.linear_schedule(self.epsilon_max, self.epsilon_min, 5_000_000, self.update_counter - start_learning)
         
         return loss.item()
     
@@ -189,25 +188,3 @@ class CNNDQNAgent:
             print(f"CNN 4-Channel Model loaded from {filename}")
         else:
             print(f"CNN 4-Channel Model file {filename} not found, starting with random weights")
-
-def create_dummy_4channel_state():
-    """Create a dummy 4-channel image state for testing"""
-    # Create a simple test 4-channel image (4, 84, 84)
-    image = np.random.rand(4, 84, 84).astype(np.float32)
-    return image 
-
-def create_robot_observation_space(state_size=8):
-    """Create observation space for robot state vector"""
-    return gym.spaces.Box(
-        low=0, high=1, shape=(state_size,), dtype=np.float32
-    )
-
-def create_robot_action_space(action_size=8):
-    """Create action space for robot actions"""
-    return gym.spaces.Discrete(action_size)
-
-def create_image_observation_space(image_channels=4, height=84, width=84):
-    """Create observation space for image input"""
-    return gym.spaces.Box(
-        low=0, high=255, shape=(image_channels, height, width), dtype=np.uint8
-    ) 

@@ -33,6 +33,8 @@ public class Proxy_Robot extends AdvancedRobot implements WebSocketClient.Messag
     public void run() {
         try {
             // Connect to Python server via WebSocket
+            setScanColor(Color.yellow);
+
             webSocket  = new WebSocketClient();
             webSocket.setMessageHandler(this);
             setAdjustGunForRobotTurn(true);
@@ -76,10 +78,10 @@ public class Proxy_Robot extends AdvancedRobot implements WebSocketClient.Messag
                 
                 this.currentState = new RobotState(getTime());
 
-                currentState.addReward(-1, "Taking time");
-                if (enemyDistance != 0) {
-                    setTurnGunRight(normalizeBearing(gunTurn));
-                }
+                // currentState.addReward(-1, "Taking time");
+                // if (enemyDistance != 0) {
+                //     setTurnGunRight(normalizeBearing(gunTurn));
+                // }
 
                 // int firePower = robotAction.isFired(pendingAction);
                 // if  (firePower > 0) {
@@ -98,18 +100,18 @@ public class Proxy_Robot extends AdvancedRobot implements WebSocketClient.Messag
                 //     }
                 // }
             
-                // if (pendingAction == robotAction.AIM) {
-                //     if (!radarOnTarget) {
-                //         System.out.println("Aim Wrong");
-                //         currentState.addReward(-2, "Aim Wrong");
-                //     } else {
-                //         if (gunOnTarget) {
-                //             System.out.println("Already Aimed");
-                //             currentState.addReward(-5, "Already Aimed");
-                //         }
-                //         currentState.addReward(3, "Aimed Right");
-                //     }
-                // }
+                if (pendingAction == robotAction.AIM) {
+                    if (!radarOnTarget) {
+                        System.out.println("Aim Wrong");
+                        currentState.addReward(-2, "Aim Wrong");
+                    } else {
+                        if (gunOnTarget) {
+                            System.out.println("Already Aimed");
+                            currentState.addReward(-5, "Already Aimed");
+                        }
+                        currentState.addReward(3, "Aimed Right");
+                    }
+                }
 
                 execute();
             }
@@ -172,7 +174,7 @@ public class Proxy_Robot extends AdvancedRobot implements WebSocketClient.Messag
     public void onHitRobot(HitRobotEvent e) {
         // Robot collided with another robot
         // debug("Hit robot");
-        this.currentState.addReward(-1, "Hit robot");
+        this.currentState.addReward(-5, "Hit robot");
     }
     
     public void onBulletMissed(BulletMissedEvent e) {
@@ -186,7 +188,7 @@ public class Proxy_Robot extends AdvancedRobot implements WebSocketClient.Messag
     public void onHitWall(HitWallEvent e) {
         // Robot hit the wall
         // debug("Hit wall");
-        this.currentState.addReward(-1, "Hit wall");
+        this.currentState.addReward(-5, "Hit wall");
     }
     
     public void onHitByBullet(HitByBulletEvent e) {
@@ -197,6 +199,8 @@ public class Proxy_Robot extends AdvancedRobot implements WebSocketClient.Messag
     
     public void onWin(WinEvent e) {
         isEnded = true;
+        ByteBuffer imageBytes = getCurrentBattleView();
+        webSocket.sendBinaryMessage(imageBytes);
         webSocket.sendMessage("{\"isWin\": true, \"time\": " + getTime() + "}");
         // Robot won the battle
         debug("Robot won the battle");
@@ -204,6 +208,8 @@ public class Proxy_Robot extends AdvancedRobot implements WebSocketClient.Messag
     
     public void onDeath(DeathEvent e) {
         isEnded = true;
+        ByteBuffer imageBytes = getCurrentBattleView();
+        webSocket.sendBinaryMessage(imageBytes);
         webSocket.sendMessage("{\"isWin\": false, \"time\": " + getTime() + "}");
         // Robot died
         debug("Robot died");

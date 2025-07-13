@@ -7,8 +7,9 @@ import traceback
 from PIL import Image
 
 # Initialize PyTorch CNN DQN agent for grayscale image input
-agent = CNNDQNAgent(image_channels=4, action_size=7, learning_rate=0.0001)
-agent.load_model(learning_rate=0.0001, filename='cnn_dqn_model_pytorch.pth')  # Load existing model if available
+IMAGE_SIZE = 84
+agent = CNNDQNAgent(image_channels=4, image_size=84, action_size=8, learning_rate=0.0005, epsilon_max=1)
+agent.load_model(learning_rate=0.0005, filename='cnn_dqn_model_pytorch.pth')  # Load existing model if available
 
 # Global state tracking
 current_state_image = None
@@ -85,7 +86,7 @@ async def handle_robot(websocket):
                         image_2d = image_array.reshape((height, width))
                         # Convert to PIL Image, resize to 84x84, and save as PNG
                         image = Image.fromarray(image_2d, mode='L')
-                        image = image.resize((84, 84))
+                        image = image.resize((IMAGE_SIZE, IMAGE_SIZE))
                         image.save("image.png")
                         # Add channel dimension for CNN (1, 84, 84)
                         image_array = np.expand_dims(image, axis=0)
@@ -173,7 +174,7 @@ async def handle_robot(websocket):
                     )
                     step_count += 1                    
                     # Train the agent and get loss
-                    if step_count % 10 == 0:
+                    if step_count % 4 == 0:
                         loss = agent.replay()
                         if loss is not None:
                             training_losses.append(loss)

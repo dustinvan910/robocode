@@ -13,7 +13,7 @@ public class RobotAction {
     
 
 
-    public static final int DO_NOTHING = 1000;
+    public static final int DO_NOTHING = 100;
     public static final int RUN_AWAY_RIGHT = 0;
     public static final int RUN_AWAY_LEFT = 1;
     public static final int RUN_AWAY_BACK = 2;
@@ -22,8 +22,9 @@ public class RobotAction {
     public static final int FIRE_2 = 5;
     public static final int FIRE_3 = 6;
     public static final int AIM = 7;
-    public static final int TURN_LEFT = 8;
-    public static final int TURN_RIGHT = 9;
+    
+    public static final int TURN_LEFT = 9;
+    public static final int TURN_RIGHT = 10;
     
     public int radar_direction = 1;
 
@@ -47,7 +48,7 @@ public class RobotAction {
     }
 
     public void debug(String message) {
-        // System.out.println(message);
+        System.out.println(message);
     }
 
     public void executeAction(int action) {
@@ -111,11 +112,13 @@ public class RobotAction {
     public void doNothing() {}
 
     public void runAwayRight() {
-        robot.setTurnRight(45);  
+        robot.setTurnRight(90);  
+        robot.setAhead(50);
     }   
 
     public void runAwayLeft() {
-        robot.setTurnLeft(45);   
+        robot.setTurnLeft(90);   
+        robot.setAhead(50);
     }
 
     public void runAwayBack() {
