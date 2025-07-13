@@ -37,7 +37,7 @@ class CNNNetwork(nn.Module):
 
 class CNNDQNAgent:
     def __init__(self, image_channels=4, action_size=8, learning_rate=0.0015, epsilon=1, 
-                 epsilon_min=0.01, epsilon_decay=0.99999, memory_size=20_000, device='auto'):
+                 epsilon_min=0.01, epsilon_decay=0.9, memory_size=20_000, device='auto'):
         """
         Initialize CNN DQN Agent for 4-channel image input
         
@@ -60,7 +60,7 @@ class CNNDQNAgent:
         
         self.batch_size = 32  # Reduced batch size for image processing
         self.gamma = 0.99  # Discount factor
-        self.update_target_frequency = 50
+        self.update_target_frequency = 100
         self.update_counter = 0
         
         # Device setup
@@ -97,7 +97,11 @@ class CNNDQNAgent:
         
         print(f"CNN DQN Agent initialized with {action_size} actions on {self.device}")
         print(f"4-channel image channels: {image_channels}")
-    
+
+    def linear_schedule(self, start_e: float, end_e: float, duration: int, t: int):
+        slope = (end_e - start_e) / duration
+        return max(slope * t + start_e, end_e)
+
     def update_target_network(self):
         """Update target network with current Q-network weights"""
         self.target_network.load_state_dict(self.q_network.state_dict())
@@ -164,8 +168,9 @@ class CNNDQNAgent:
             self.update_target_network()
         
         # Decay epsilon
-        if self.epsilon > self.epsilon_min:
-            self.epsilon *= self.epsilon_decay
+        # if self.epsilon > self.epsilon_min:
+        #     self.epsilon *= self.epsilon_decay
+        self.epsilon = self.linear_schedule(self.epsilon, self.epsilon_min, 10000000*0.1, self.update_counter)
         
         return loss.item()
     

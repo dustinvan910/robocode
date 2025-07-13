@@ -7,8 +7,8 @@ import traceback
 from PIL import Image
 
 # Initialize PyTorch CNN DQN agent for grayscale image input
-agent = CNNDQNAgent(image_channels=4, action_size=8, learning_rate=0.0015)
-agent.load_model(learning_rate=0.0015, filename='cnn_dqn_model_pytorch.pth')  # Load existing model if available
+agent = CNNDQNAgent(image_channels=4, action_size=7, learning_rate=0.0001)
+agent.load_model(learning_rate=0.0001, filename='cnn_dqn_model_pytorch.pth')  # Load existing model if available
 
 # Global state tracking
 current_state_image = None
@@ -127,10 +127,10 @@ async def handle_robot(websocket):
                     play_time = state_data.get('time')
                     reward = 0
                     if state_data.get('isWin'):
-                        reward = 1000
+                        reward = 100
                         win_episode += 1
                     else:
-                        reward = -1000
+                        reward = -100
                         death_episode += 1
                     
                     agent.remember(
