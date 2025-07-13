@@ -162,33 +162,20 @@ class DQNAgent:
 
 def normalize_state(state_dict):
     """Normalize state values for better neural network performance"""
-    
-    # Discretize continuous values for better learning
-    x_discrete = int(state_dict.get('x', 0) / 50)  # 8 discrete x positions
-    y_discrete = int(state_dict.get('y', 0) / 50)  # 8 discrete y positions
-    heading_discrete = int(state_dict.get('heading', 0) / 45)  # 8 discrete heading directions
-    gun_heading_discrete = int(state_dict.get('gunHeading', 0) / 45)  # 8 discrete gun directions
-    gun_heat_discrete = int(state_dict.get('gunHeat', 0))  # 3 discrete gun heat levels (0, 1, 2+)
-    energy_discrete = int(state_dict.get('energy', 0) / 10 )  # 10 discrete energy levels
-    enemy_distance_discrete =  int(state_dict.get('enemyDistance', 0) / 50 )
-
     state = np.array([
-        x_discrete / 8,  # Discrete x position
-        y_discrete / 8,  # Discrete y position
-        energy_discrete / 10,  # Normalize energy
-        gun_heat_discrete / 3,  # Discrete gun heat
-        enemy_distance_discrete / 12,  # Normalize enemy distance
-        state_dict.get('distanceRemaining', 0) / 100,  
-        state_dict.get('gunOnTarget', 0),  # Normalize heading
-        state_dict.get('radarOnTarget', 0) ,  # Normalize heading
-
-        # state_dict.get('heading', 0) / 360,  # Normalize heading
-        # state_dict.get('gunHeading', 0) / 360,  # Normalize gun heading
-        # state_dict.get('velocity', 0) / 8,  # Normalize velocity
-
-        # state_dict.get('enemyBearing', 0) / 180,  # Normalize enemy bearing
-        # state_dict.get('enemyHeading', 0) / 360,  # Normalize enemy heading
-        # state_dict.get('enemyVelocity', 0) / 8,  # Normalize enemy velocity
+        state_dict.get('x', 0) / 400,  # Normalize x position
+        state_dict.get('y', 0) / 400,  # Normalize y position
+        state_dict.get('heading', 0) / 360,  # Normalize heading
+        state_dict.get('energy', 0) / 100,  # Normalize energy
+        state_dict.get('gunHeat', 0) / 3,  # Normalize gun heat
+        state_dict.get('gunHeading', 0) / 360,  # Normalize gun heading
+        state_dict.get('velocity', 0) / 8,  # Normalize velocity
+        state_dict.get('distanceRemaining', 0) / 100,  # Normalize distance remaining
+        state_dict.get('enemyBearing', 0) / 180,  # Normalize enemy bearing
+        state_dict.get('enemyDistance', 0) / 400,  # Normalize enemy distance
+        state_dict.get('enemyHeading', 0) / 360,  # Normalize enemy heading
+        state_dict.get('enemyVelocity', 0) / 8,  # Normalize enemy velocity
+        state_dict.get('turnRemaining', 0) / 360,  # Normalize turn remaining
         # state_dict.get('enemyX', 0) / 400,  # Normalize enemy x
         # state_dict.get('enemyY', 0) / 400,  # Normalize enemy y
     ])

@@ -10,7 +10,7 @@ public class RobotState {
     public double gunHeat;
     public double velocity;
     public double distanceRemaining;
-
+    public double turnRemaining;
     public double enemyBearing;
     public double enemyDistance;
     public double enemyHeading;
@@ -32,7 +32,7 @@ public class RobotState {
         this.gunHeat = 0;
         this.heading = 0;
         this.distanceRemaining = 0;
-
+        this.turnRemaining = 0;
         this.enemyBearing = 0;
         this.enemyDistance = 0;
         this.enemyHeading = 0;
@@ -44,7 +44,7 @@ public class RobotState {
         this.time = time;
     }
     
-    public void updateRobotState(double x, double y, double heading, double energy, double gunHeading, double gunHeat, double velocity, double distanceRemaining) {
+    public void updateRobotState(double x, double y, double heading, double energy, double gunHeading, double gunHeat, double velocity, double distanceRemaining, double turnRemaining) {
         // System.out.println("Updating robot state");
         this.x = x;
         this.y = y;
@@ -54,6 +54,7 @@ public class RobotState {
         this.gunHeat = gunHeat;
         this.velocity = velocity;
         this.distanceRemaining = distanceRemaining;
+        this.turnRemaining = turnRemaining;
     }
     
     public void updateEnemyState(double bearing, double distance, double heading, double x, double y, double velocity) {
@@ -107,10 +108,10 @@ public class RobotState {
         
         return String.format(
             "{\"x\":%.2f,\"y\":%.2f,\"heading\":%.2f,\"energy\":%.2f,\"gunHeading\":%.2f,\"gunHeat\":%.2f," +
-            "\"velocity\":%.2f,\"distanceRemaining\":%.2f," +
+            "\"velocity\":%.2f,\"distanceRemaining\":%.2f,\"turnRemaining\":%.2f," +
             "\"enemyBearing\":%.2f,\"enemyDistance\":%.2f,\"enemyHeading\":%.2f," +
             "\"enemyX\":%.2f,\"enemyY\":%.2f,\"enemyVelocity\":%.2f,\"reward\":%d,\"gunOnTarget\":%d,\"radarOnTarget\":%d}",
-            x, y, heading, energy, gunHeading, gunHeat, velocity, distanceRemaining,
+            x, y, heading, energy, gunHeading, gunHeat, velocity, distanceRemaining, turnRemaining,
             enemyBearing, enemyDistance, enemyHeading, enemyX, enemyY, enemyVelocity, reward, gunOnTarget, radarOnTarget
         );
     }

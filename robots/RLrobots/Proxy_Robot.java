@@ -48,11 +48,17 @@ public class Proxy_Robot extends AdvancedRobot implements WebSocketClient.Messag
                     break;
                 }
                 
+                // Check if robot energy is 0 and end the robot
+                if (getEnergy() == 0) {
+                    debug("Robot energy is 0, ending robot");
+                    isEnded = true;
+                    break;
+                }
 
                 ByteBuffer imageBytes = getCurrentBattleView();
                 webSocket.sendBinaryMessage(imageBytes);
 
-                this.currentState.updateRobotState(getX(), getY(), getHeading(), getEnergy(), getGunHeading(), getGunHeat(), getVelocity(), getDistanceRemaining());
+                this.currentState.updateRobotState(getX(), getY(), getHeading(), getEnergy(), getGunHeading(), getGunHeat(), getVelocity(), getDistanceRemaining(), getTurnRemaining());
                 webSocket.sendMessage(this.currentState.toJson());              
 
                 double enemyDistance = this.currentState.enemyDistance;
@@ -78,29 +84,27 @@ public class Proxy_Robot extends AdvancedRobot implements WebSocketClient.Messag
                 
                 this.currentState = new RobotState(getTime());
 
-                // currentState.addReward(-1, "Taking time");
-                // if (enemyDistance != 0) {
-                //     setTurnGunRight(normalizeBearing(gunTurn));
-                // }
+                currentState.addReward(-3, "Taking time");
 
-                // int firePower = robotAction.isFired(pendingAction);
-                // if  (firePower > 0) {
-                //     System.out.println("Fire " + (gunHeat) + " " + firePower);    
-                //     if (gunHeat!=0) {
-                //         currentState.addReward(-5, "Fired hot gun");
-                //     } else {
-                //          currentState.addReward(-firePower + 3, "Fire");
-                //     }
+                int firePower = robotAction.isFired(pendingAction);
+                if  (firePower > 0) {
+                    System.out.println("Fire " + (gunHeat) + " " + firePower);    
 
-                //     if (enemyDistance != 0 && Math.abs(normalizeBearing(gunTurn)) < 1) {
-                //         System.out.println("Fire Right");
-                //         currentState.addReward(10, "Fire Right");
-                //     } else {
-                //         System.out.println("Fire Wrong");
-                //     }
-                // }
+                    if (gunHeat!=0) {
+                        currentState.addReward(-5, "Fired hot gun");
+                    } else {
+                         currentState.addReward(-firePower + 3, "Fire");
+                    }
+
+                    if (gunOnTarget) {
+                        System.out.println("Fire Right");
+                        currentState.addReward(5, "Fire Right");
+                    } else {
+                        System.out.println("Fire Wrong");
+                    }
+                }
             
-                if (pendingAction == robotAction.AIM) {
+                if (pendingAction == robotAction.AIM_GUN) {
                     if (!radarOnTarget) {
                         System.out.println("Aim Wrong");
                         currentState.addReward(-2, "Aim Wrong");

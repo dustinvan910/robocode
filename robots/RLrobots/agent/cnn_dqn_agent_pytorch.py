@@ -169,7 +169,7 @@ class CNNDQNAgent:
         # Decay epsilon
         # if self.epsilon > self.epsilon_min:
         #     self.epsilon *= self.epsilon_decay
-        self.epsilon = self.linear_schedule(self.epsilon_max, self.epsilon_min, 5_000_000, self.update_counter - start_learning)
+        self.epsilon = self.linear_schedule(self.epsilon_max, self.epsilon_min, 200_000, self.update_counter - start_learning)
         
         return loss.item()
     

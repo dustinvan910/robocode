@@ -11,22 +11,32 @@ import java.util.ArrayList;
  */
 public class RobotAction {
     
+    // action for moving
+    public static final int FACING_ENEMY = 0;
+    public static final int TURN_90_ENEMY = 1;
+    public static final int RUN_CLOCKWISE = 2;
+    public static final int RUN_COUNTER_CLOCKWISE = 3;
+    public static final int RUN_AWAY_BACK = 4;
+    public static final int RUN_AHEAD = 5;
 
+    // action for aiming and firing
+    public static final int FIRE_AUTO = 6;
+    public static final int AIM_GUN = 7;
 
-    public static final int DO_NOTHING = 100;
-    public static final int RUN_AWAY_RIGHT = 0;
-    public static final int RUN_AWAY_LEFT = 1;
-    public static final int RUN_AWAY_BACK = 2;
-    public static final int RUN_AHEAD = 3;
-    public static final int FIRE_1 = 4;
-    public static final int FIRE_2 = 5;
-    public static final int FIRE_3 = 6;
-    public static final int AIM = 7;
+    public static final int FACING_ENEMY_FIRE = 77;
+    public static final int TURN_90_ENEMY_FIRE = 78;
+    public static final int RUN_CLOCKWISE_FIRE = 79;
+    public static final int RUN_COUNTER_CLOCKWISE_FIRE = 80;  
+    public static final int RUN_AWAY_BACK_FIRE = 81;
+    public static final int RUN_AHEAD_FIRE = 82;
+
+    public static final int FIRE_1 = 83;
+    public static final int FIRE_2 = 84;
+    public static final int FIRE_3 = 85;
+    // public static final int TURN_LEFT = 88;
+    // public static final int TURN_RIGHT = 100;
     
-    public static final int TURN_LEFT = 9;
-    public static final int TURN_RIGHT = 10;
-    
-    public int radar_direction = 1;
+    public int move_direction = 1;
 
     private Proxy_Robot robot;
     
@@ -37,12 +47,13 @@ public class RobotAction {
     public int isFired(int action){
         if (action == FIRE_1) {
             return 1;
-        }
-        if (action == FIRE_2) {
+        } else if (action == FIRE_2) {
             return 2;
-        }
-        if (action == FIRE_3) {
+        } else if (action == FIRE_3) {
             return 3;
+        }
+        if (action == FIRE_AUTO) {
+            return 1;
         }
         return 0;
     }
@@ -53,25 +64,63 @@ public class RobotAction {
 
     public void executeAction(int action) {
         switch (action) {
-            case DO_NOTHING:
-                debug("Executing action: " + action + " (doNothing)");
-                doNothing();
+            case FACING_ENEMY_FIRE:
+                debug("Executing action: " + action + " (facingEnemyFire)");
+                facingEnemy();
+                fireAuto();
                 break;
-            case RUN_AWAY_RIGHT:
-                debug("Executing action: " + action + " (runAwayRight)");
-                runAwayRight();
+            case FACING_ENEMY:
+                debug("Executing action: " + action + " (facingEnemy)");
+                facingEnemy();
+                break;
+            case TURN_90_ENEMY:
+                debug("Executing action: " + action + " (turn90Enemy)");
+                ninetyDegrees();
+                break;
+            case TURN_90_ENEMY_FIRE:
+                debug("Executing action: " + action + " (turn90EnemyFire)");
+                ninetyDegrees();
+                fireAuto();
+                break;
+            case RUN_CLOCKWISE:
+                debug("Executing action: " + action + " (runClockwise)");
+                runClockwise();
                 break;  
-            case RUN_AWAY_LEFT:
-                debug("Executing action: " + action + " (runAwayLeft)");
-                runAwayLeft();
+            case RUN_COUNTER_CLOCKWISE:
+                debug("Executing action: " + action + " (runCounterClockwise)");
+                runCounterClockwise();
+                break;
+            case RUN_CLOCKWISE_FIRE:
+                debug("Executing action: " + action + " (runClockwiseFire)");
+                runClockwise();
+                fireAuto();
+                break;  
+            case RUN_COUNTER_CLOCKWISE_FIRE:
+                debug("Executing action: " + action + " (runCounterClockwiseFire)");
+                runCounterClockwise();
+                fireAuto();
+                break;
+            case RUN_AWAY_BACK_FIRE:
+                debug("Executing action: " + action + " (runAwayBackFire)");
+                runAwayBack();
+                fireAuto();
+                break;
+            case RUN_AHEAD_FIRE:
+                debug("Executing action: " + action + " (runAheadFire)");   
+                runAhead();
+                fireAuto();
                 break;
             case RUN_AWAY_BACK:
-                debug("Executing action: " + action + " (runAwayBack)");
+                debug("Executing action: " + action + " (runAwayBackFire)");
                 runAwayBack();
                 break;
             case RUN_AHEAD:
                 debug("Executing action: " + action + " (runAhead)");
                 runAhead();
+                break;
+            case FIRE_AUTO:
+                debug("Executing action: " + action + " (fireAuto)");
+                fireAuto();
                 break;
             case FIRE_1:
                 debug("Executing action: " + action + " (fire1)");
@@ -85,40 +134,45 @@ public class RobotAction {
                 debug("Executing action: " + action + " (fire3)");
                 fire3();
                 break;
-            case AIM:
+            case AIM_GUN:
                 debug("Executing action: " + action + " (aim)");
                 aim();
-                break;
-            // case CHANGE_RADAR_DIRECTION:
-            //     radar_direction = radar_direction * -1;
-            //     break;
-            case TURN_LEFT:
-                debug("Executing action: " + action + " (turnLeft)");
-                turnLeft();
-                break;
-            case TURN_RIGHT:
-                debug("Executing action: " + action + " (turnRight)");
-                turnRight();
                 break;
             default:
                 System.out.println("Unknown action: " + action);
                 System.exit(0);
                 break;
         }
-        robot.setTurnRadarRight(radar_direction * 90);
+        robot.setTurnRadarRight(90);
     }
     
 
     public void doNothing() {}
 
-    public void runAwayRight() {
+    public void facingEnemy() {
+        if (robot.currentState.enemyDistance != 0) {
+            double turn = robot.currentState.enemyBearing;
+            System.out.println("Turn: " + turn);
+            robot.setTurnRight(normalizeBearing(turn));
+        }
+    }
+    
+    public void ninetyDegrees() {
+        if (robot.currentState.enemyDistance != 0) {
+            double degdiff = robot.currentState.enemyBearing - 90;
+            System.out.println("Turn2: " + robot.currentState.enemyBearing + " " + normalizeBearing(degdiff));
+            robot.setTurnRight(normalizeBearing(degdiff));
+        }
+    }   
+
+    public void runClockwise() {
         robot.setTurnRight(90);  
         robot.setAhead(50);
     }   
 
-    public void runAwayLeft() {
-        robot.setTurnLeft(90);   
-        robot.setAhead(50);
+    public void runCounterClockwise() {
+        robot.setTurnLeft( 90);   
+        robot.setAhead(-50);
     }
 
     public void runAwayBack() {
@@ -127,6 +181,16 @@ public class RobotAction {
 
     public void runAhead() {
         robot.setAhead(50);
+    }
+
+    public void fireAuto() {
+        if (robot.currentState.enemyDistance < 100) {
+            robot.setFire(3);
+        } else if (robot.currentState.enemyDistance < 200) {
+            robot.setFire(2);
+        } else {
+            robot.setFire(1);
+        }
     }
 
     public void fire1() {
@@ -142,21 +206,25 @@ public class RobotAction {
     }
 
     public void aim() {
+        // if (robot.currentState.enemyDistance != 0) {
         double gunTurn = robot.getHeading() - robot.getGunHeading() + robot.currentState.enemyBearing;
         robot.setTurnGunRight(normalizeBearing(gunTurn));
+        // }
     }
     
+    // public void turnRadarRight(double angle) {
+    //     robot.setTurnRadarRight(normalizeBearing(angle));
+    // }
+
+    // public void aimRadar() {
+    //     double radarTurn = robot.getHeading() - robot.getRadarHeading() + robot.currentState.enemyBearing;
+    //     robot.setTurnRadarRight(normalizeBearing(radarTurn));
+    // }
+
     double normalizeBearing(double angle) {
         while (angle >  180) angle -= 360;
         while (angle < -180) angle += 360;
         return angle;
     }
 
-    public void turnLeft() {
-        robot.setTurnRight(robot.currentState.heading - 90);   
-    }
-
-    public void turnRight() {
-        robot.setTurnRight(robot.currentState.heading + 90); 
-    }
 } 
