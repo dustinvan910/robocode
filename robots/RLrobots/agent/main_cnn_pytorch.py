@@ -7,8 +7,8 @@ import traceback
 from PIL import Image
 
 # Initialize PyTorch CNN DQN agent for grayscale image input
-agent = CNNDQNAgent(image_channels=4, action_size=8, learning_rate=0.0015)
-agent.load_model(learning_rate=0.0015, filename='cnn_dqn_model_pytorch.pth')  # Load existing model if available
+agent = CNNDQNAgent(image_channels=4, action_size=7, learning_rate=0.0001)
+agent.load_model(learning_rate=0.0001, filename='cnn_dqn_model_pytorch.pth')  # Load existing model if available
 
 # Global state tracking
 current_state_image = None
@@ -69,7 +69,7 @@ async def handle_robot(websocket):
             try:
                 if isinstance(message, bytes):
                     # Convert raw grayscale image bytes to numpy array
-                    print("Binary message received")
+                    # print("Binary message received")
 
                     # Assuming the image is sent as raw grayscale bytes
                     # You may need to adjust width and height based on your actual image dimensions
@@ -83,7 +83,7 @@ async def handle_robot(websocket):
                         image_2d = image_array.reshape((height, width))
                         # Convert to PIL Image, resize to 84x84, and save as PNG
                         image = Image.fromarray(image_2d, mode='L')
-                        image = image.resize((64, 64))
+                        image = image.resize((128, 128))
                         # Normalize image data to [0, 1] range
                         image_array = np.array(image, dtype=np.float32) / 255.0
                         # Add channel dimension for CNN (1, 84, 84)
@@ -93,7 +93,7 @@ async def handle_robot(websocket):
                         print(f"Unexpected image data size: {len(image_array)} bytes")
                     continue
 
-                print("JSON message received")
+                # print("JSON message received")
                 state_data = json.loads(message)
                 
                 if 'play' in state_data:
@@ -126,10 +126,10 @@ async def handle_robot(websocket):
                     play_time = state_data.get('time')
                     reward = 0
                     if state_data.get('isWin'):
-                        reward = 1000
+                        reward = 100
                         win_episode += 1
                     else:
-                        reward = -1000
+                        reward = -100
                         death_episode += 1
                     
                     agent.remember(
@@ -148,10 +148,10 @@ async def handle_robot(websocket):
                     await websocket.send(str(action))
                     continue
                 
-                opt_action = agent.get_optimal_action(image_state)
+                # opt_action = agent.get_optimal_action(image_state)
                 
-                # Record optimal action for this episode
-                optimal_actions.append(opt_action)
+                # # Record optimal action for this episode
+                # optimal_actions.append(opt_action)
                 
                 # Get action from CNN DQN agent
                 action = agent.act(image_state)
@@ -161,7 +161,7 @@ async def handle_robot(websocket):
                     
                     reward = state_data.get('reward', 0) 
                     episode_reward += reward
-                    print("reward : ", reward)
+                    # print("reward : ", reward)
                     # Store experience in agent's memory
                     agent.remember(
                         previous_state_image,

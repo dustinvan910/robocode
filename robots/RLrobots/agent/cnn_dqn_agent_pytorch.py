@@ -13,30 +13,30 @@ import base64
 import io
 
 class CNNNetwork(nn.Module):
-    def __init__(self, image_channels=4, action_size=8, hidden_size=256):
+    def __init__(self, image_channels=4, action_size=8, hidden_size=512):
         super(CNNNetwork, self).__init__()
         
         # CNN layers for 4-channel image processing using Sequential
         self.cnn_layers = nn.Sequential(
-            nn.Conv2d(image_channels, 16, kernel_size=3, padding=1),
+            nn.Conv2d(image_channels, 32, 8, stride=4),
             nn.ReLU(),
-            nn.MaxPool2d(2, 2),
-            
-            nn.Conv2d(16, 32, kernel_size=3, padding=1),
+            nn.Conv2d(32, 64, 4, stride=2),
             nn.ReLU(),
-            nn.MaxPool2d(2, 2)
+            nn.Conv2d(64, 64, 3, stride=1),
+            nn.ReLU(),
         )
         
         # Calculate the size after CNN layers
-        # Assuming input is 84x84, after 2 conv layers with pooling: 64 -> 32 -> 16
-        # So final spatial size is 21x21 with 64 channels
-        cnn_output_size = 32 * 16 * 16
+        # Assuming input is 128x128:
+        # Conv1: (128 - 8) / 4 + 1 = 31 -> 31x31x32
+        # Conv2: (31 - 4) / 2 + 1 = 14 -> 14x14x64  
+        # Conv3: (14 - 3) / 1 + 1 = 12 -> 12x12x64
+        # So final spatial size is 12x12 with 64 channels
+        cnn_output_size = 64 * 12 * 12
         
         # Fully connected layers using Sequential
         self.fc_layers = nn.Sequential(
             nn.Linear(cnn_output_size, hidden_size),
-            nn.ReLU(),
-            nn.Linear(hidden_size, hidden_size),
             nn.ReLU(),
             nn.Linear(hidden_size, action_size)
         )
@@ -65,7 +65,7 @@ class CNNNetwork(nn.Module):
 
 class CNNDQNAgent:
     def __init__(self, image_channels=4, action_size=8, learning_rate=0.0015, epsilon=1, 
-                 epsilon_min=0.01, epsilon_decay=0.99999, memory_size=20_000, device='auto'):
+                 epsilon_min=0.01, epsilon_decay=0.9, memory_size=20_000, device='auto'):
         """
         Initialize CNN DQN Agent for 4-channel image input
         
@@ -86,9 +86,9 @@ class CNNDQNAgent:
         self.epsilon_decay = epsilon_decay
         self.learning_rate = learning_rate
         self.memory = deque(maxlen=memory_size)
-        self.batch_size = 32  # Reduced batch size for image processing
+        self.batch_size = 64  # Reduced batch size for image processing
         self.gamma = 0.99  # Discount factor
-        self.update_target_frequency = 50
+        self.update_target_frequency = 100
         self.update_counter = 0
         
         # Device setup
@@ -107,7 +107,11 @@ class CNNDQNAgent:
         
         print(f"CNN DQN Agent initialized with {action_size} actions on {self.device}")
         print(f"4-channel image channels: {image_channels}")
-    
+
+    def linear_schedule(self, start_e: float, end_e: float, duration: int, t: int):
+        slope = (end_e - start_e) / duration
+        return max(slope * t + start_e, end_e)
+
     def update_target_network(self):
         """Update target network with current Q-network weights"""
         self.target_network.load_state_dict(self.q_network.state_dict())
@@ -122,9 +126,10 @@ class CNNDQNAgent:
         return q_values
     
     def get_optimal_action(self, state_image):
-        state_tensor = torch.FloatTensor(state_image).unsqueeze(0).to(self.device)
-        q_values = self.target_network(state_tensor)
-        return q_values.argmax().item()
+        with torch.no_grad():
+            state_tensor = torch.FloatTensor(state_image).unsqueeze(0).to(self.device)
+            q_values = self.target_network(state_tensor)
+            return q_values.argmax().item()
     
     def act(self, state_image):
         """Choose action using epsilon-greedy policy"""
@@ -174,8 +179,9 @@ class CNNDQNAgent:
             self.update_target_network()
         
         # Decay epsilon
-        if self.epsilon > self.epsilon_min:
-            self.epsilon *= self.epsilon_decay
+        # if self.epsilon > self.epsilon_min:
+        #     self.epsilon *= self.epsilon_decay
+        self.epsilon = self.linear_schedule(self.epsilon, self.epsilon_min, 10000000*0.1, self.update_counter)
         
         return loss.item()
     
