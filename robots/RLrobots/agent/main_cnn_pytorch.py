@@ -56,8 +56,10 @@ def convert_frame_buffer_to_image_state(frame_buffer):
         return None
     
     # Stack the 4 frames into a single 4-channel image
-    # Each frame is (1, 84, 84), so result will be (4, 84, 84)
+    # Each frame is (1, 84, 84), so result will be (1, 4, 84, 84)
     stacked_frames = np.concatenate(list(frame_buffer), axis=0)
+    stacked_frames = np.expand_dims(stacked_frames, axis=0)
+    
     return stacked_frames
 
 async def handle_robot(websocket):
@@ -83,11 +85,10 @@ async def handle_robot(websocket):
                         image_2d = image_array.reshape((height, width))
                         # Convert to PIL Image, resize to 84x84, and save as PNG
                         image = Image.fromarray(image_2d, mode='L')
-                        image = image.resize((128, 128))
-                        # Normalize image data to [0, 1] range
-                        image_array = np.array(image, dtype=np.float32) / 255.0
+                        image = image.resize((84, 84))
+                        image.save("image.png")
                         # Add channel dimension for CNN (1, 84, 84)
-                        image_array = np.expand_dims(image_array, axis=0)
+                        image_array = np.expand_dims(image, axis=0)
                         frame_buffer.append(image_array)
                     else:
                         print(f"Unexpected image data size: {len(image_array)} bytes")
@@ -181,7 +182,7 @@ async def handle_robot(websocket):
                 await websocket.send(str(action))
                 
                 # Update tracking variables
-                previous_state_image = current_state_image.copy()
+                previous_state_image = image_state
                 previous_action = action
 
                             
