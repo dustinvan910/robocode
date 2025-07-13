@@ -53,7 +53,6 @@ public class Proxy_Robot extends AdvancedRobot implements WebSocketClient.Messag
                 this.currentState.updateRobotState(getX(), getY(), getHeading(), getEnergy(), getGunHeading(), getGunHeat(), getVelocity(), getDistanceRemaining());
                 webSocket.sendMessage(this.currentState.toJson());              
 
-                
                 double enemyDistance = this.currentState.enemyDistance;
                 double enemyBearing = this.currentState.enemyBearing;
                 boolean gunOnTarget = this.currentState.isGunOnTarget();
@@ -78,6 +77,9 @@ public class Proxy_Robot extends AdvancedRobot implements WebSocketClient.Messag
                 this.currentState = new RobotState(getTime());
 
                 currentState.addReward(-1, "Taking time");
+                if (enemyDistance != 0) {
+                    setTurnGunRight(normalizeBearing(gunTurn));
+                }
 
                 // int firePower = robotAction.isFired(pendingAction);
                 // if  (firePower > 0) {
