@@ -6,7 +6,7 @@ from dqn_agent_pytorch import DQNAgent, normalize_state
 import traceback
 
 # Initialize PyTorch DQN agent
-agent = DQNAgent(state_size=8, action_size=8, learning_rate=0.002)
+agent = DQNAgent(state_size=13, action_size=8, learning_rate=0.002)
 agent.load_model(learning_rate=0.002, filename='dqn_model_pytorch.pth')  # Load existing model if available
 
 # Global state tracking
@@ -164,6 +164,7 @@ async def handle_robot(websocket):
                         1
                     )
                     episode_reward+=reward
+                    print("reward", reward)
                     return
 
                 # Check if state_data contains 'test' key and run get_qvalue if it does

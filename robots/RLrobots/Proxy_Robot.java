@@ -55,8 +55,8 @@ public class Proxy_Robot extends AdvancedRobot implements WebSocketClient.Messag
                     break;
                 }
 
-                ByteBuffer imageBytes = getCurrentBattleView();
-                webSocket.sendBinaryMessage(imageBytes);
+                // ByteBuffer imageBytes = getCurrentBattleView();
+                // webSocket.sendBinaryMessage(imageBytes);
 
                 this.currentState.updateRobotState(getX(), getY(), getHeading(), getEnergy(), getGunHeading(), getGunHeat(), getVelocity(), getDistanceRemaining(), getTurnRemaining());
                 webSocket.sendMessage(this.currentState.toJson());              
@@ -68,11 +68,20 @@ public class Proxy_Robot extends AdvancedRobot implements WebSocketClient.Messag
                 double gunTurn = getHeading() - getGunHeading() + enemyBearing;
                 double gunHeat = getGunHeat();
 
+                long startTime = System.currentTimeMillis();
+                long timeout = 1000*3; // 100ms timeout
+                
                 while (!actionReady) { 
                     try {
                         Thread.sleep(1);
                     } catch (InterruptedException ex) {
                         Thread.currentThread().interrupt();
+                        break;
+                    }
+                    
+                    // Check for timeout
+                    if (System.currentTimeMillis() - startTime > timeout) {
+                        setPendingAction(robotAction.AIM_GUN);
                         break;
                     }
                 }
@@ -203,8 +212,8 @@ public class Proxy_Robot extends AdvancedRobot implements WebSocketClient.Messag
     
     public void onWin(WinEvent e) {
         isEnded = true;
-        ByteBuffer imageBytes = getCurrentBattleView();
-        webSocket.sendBinaryMessage(imageBytes);
+        // ByteBuffer imageBytes = getCurrentBattleView();
+        // webSocket.sendBinaryMessage(imageBytes);
         webSocket.sendMessage("{\"isWin\": true, \"time\": " + getTime() + "}");
         // Robot won the battle
         debug("Robot won the battle");
@@ -212,8 +221,8 @@ public class Proxy_Robot extends AdvancedRobot implements WebSocketClient.Messag
     
     public void onDeath(DeathEvent e) {
         isEnded = true;
-        ByteBuffer imageBytes = getCurrentBattleView();
-        webSocket.sendBinaryMessage(imageBytes);
+        // ByteBuffer imageBytes = getCurrentBattleView();
+        // webSocket.sendBinaryMessage(imageBytes);
         webSocket.sendMessage("{\"isWin\": false, \"time\": " + getTime() + "}");
         // Robot died
         debug("Robot died");
