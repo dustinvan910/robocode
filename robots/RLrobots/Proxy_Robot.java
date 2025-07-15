@@ -7,10 +7,7 @@ import java.io.*;
 import java.net.*;
 import java.net.URI;
 import javax.websocket.*;
-import java.nio.ByteBuffer;
-import java.awt.Color;
-import java.awt.BasicStroke;
-import java.awt.Graphics2D;
+
 
 public class Proxy_Robot extends AdvancedRobot implements WebSocketClient.MessageHandler {
     
@@ -33,8 +30,6 @@ public class Proxy_Robot extends AdvancedRobot implements WebSocketClient.Messag
     public void run() {
         try {
             // Connect to Python server via WebSocket
-            setScanColor(Color.yellow);
-
             webSocket  = new WebSocketClient();
             webSocket.setMessageHandler(this);
             setAdjustGunForRobotTurn(true);
@@ -43,34 +38,13 @@ public class Proxy_Robot extends AdvancedRobot implements WebSocketClient.Messag
 
             while (true) { 
                 if (isEnded) {
-                    debug("Robot ended1" );
+                    debug("Robot ended" );
                     // webSocket.closeConnection();
                     break;
                 }
-                
-                // Check if robot energy is 0 and end the robot
-                if (getEnergy() == 0) {
-                    debug("Robot energy is 0, ending robot");
-                    isEnded = true;
-                    break;
-                }
-
-                // ByteBuffer imageBytes = getCurrentBattleView();
-                // webSocket.sendBinaryMessage(imageBytes);
-
                 this.currentState.updateRobotState(getX(), getY(), getHeading(), getEnergy(), getGunHeading(), getGunHeat(), getVelocity(), getDistanceRemaining(), getTurnRemaining());
                 webSocket.sendMessage(this.currentState.toJson());              
 
-                double enemyDistance = this.currentState.enemyDistance;
-                double enemyBearing = this.currentState.enemyBearing;
-                boolean gunOnTarget = this.currentState.isGunOnTarget();
-                boolean radarOnTarget = this.currentState.isRadarOnTarget();
-                double gunTurn = getHeading() - getGunHeading() + enemyBearing;
-                double gunHeat = getGunHeat();
-
-                long startTime = System.currentTimeMillis();
-                long timeout = 1000*3; // 100ms timeout
-                
                 while (!actionReady) { 
                     try {
                         Thread.sleep(1);
@@ -78,59 +52,54 @@ public class Proxy_Robot extends AdvancedRobot implements WebSocketClient.Messag
                         Thread.currentThread().interrupt();
                         break;
                     }
-                    
-                    // Check for timeout
-                    if (System.currentTimeMillis() - startTime > timeout) {
-                        setPendingAction(robotAction.AIM_GUN);
-                        break;
-                    }
                 }
-                
+
                 if (actionReady) {
                     robotAction.executeAction(pendingAction);
                     actionReady = false; 
                 }
                 
+                
+                double enemyDistance = this.currentState.enemyDistance;
+                double enemyBearing = this.currentState.enemyBearing;
+                double gunTurn = this.currentState.heading - this.currentState.gunHeading + enemyBearing;
+                double gunHeat = this.currentState.gunHeat;
+
                 this.currentState = new RobotState(getTime());
 
-                currentState.addReward(-3, "Taking time");
+                // if (robotAction.hasFired(pendingAction)) {
+                //     currentState.addReward(-2, "Fired gun");
+                // }
+                // currentState.addReward(-0.5, "Optimize for using less time");
+                // currentState.addReward(-3, "Do nothing");
 
-                int firePower = robotAction.isFired(pendingAction);
-                if  (firePower > 0) {
-                    System.out.println("Fire " + (gunHeat) + " " + firePower);    
-
-                    if (gunHeat!=0) {
+                if (robotAction.isFired(pendingAction)!= 0) {
+                    if (gunHeat != 0) {
                         currentState.addReward(-5, "Fired hot gun");
                     } else {
-                         currentState.addReward(-firePower + 3, "Fire");
-                    }
-
-                    if (gunOnTarget) {
-                        System.out.println("Fire Right");
-                        currentState.addReward(5, "Fire Right");
-                    } else {
-                        System.out.println("Fire Wrong");
-                    }
-                }
-            
-                if (pendingAction == robotAction.AIM_GUN) {
-                    if (!radarOnTarget) {
-                        System.out.println("Aim Wrong");
-                        currentState.addReward(-2, "Aim Wrong");
-                    } else {
-                        if (gunOnTarget) {
-                            System.out.println("Already Aimed");
-                            currentState.addReward(-5, "Already Aimed");
+                        if (enemyDistance!=0 && gunTurn == 0) {
+                            currentState.addReward(5, "Fired cold gun");
                         }
-                        currentState.addReward(3, "Aimed Right");
+                        //  else {
+                        //     currentState.addReward(-5, "Fired cold gun");
+                        // }
                     }
                 }
 
+                if (pendingAction == robotAction.AIM_GUN) {
+                    if (enemyDistance == 0) {
+                        currentState.addReward(-5, "Aim Wrong");
+                    } else {
+                        if (gunTurn != 0) {
+                            currentState.addReward(5, "Aimed Right");
+                        } 
+                    }
+                }
                 execute();
             }
 
         } catch (Exception e) {
-            System.out.println("Error1: " + e);
+            System.out.println("Error: " + e);
         } 
 
     }
@@ -141,12 +110,6 @@ public class Proxy_Robot extends AdvancedRobot implements WebSocketClient.Messag
         setPendingAction(Integer.parseInt(message));
     }
 
-    public void onPaint(Graphics2D g) {
-		g.setColor(Color.red);
-		g.drawOval((int) (getX() - 25), (int) (getY() - 25), 50, 50);
-		g.setColor(new Color(0, 0xFF, 0, 30));
-		g.drawOval((int) (getX() - 25), (int) (getY() - 25), 50, 50);
-	}
     public void onScannedRobot(ScannedRobotEvent e) {
         // debug("Scanned robot!");
         double enemyDistance = e.getDistance();
@@ -172,6 +135,7 @@ public class Proxy_Robot extends AdvancedRobot implements WebSocketClient.Messag
 		return angle;
 	}
 
+    
     public void onBulletHit(BulletHitEvent e) {
         // Robot hit enemy
         double bulletPower = e.getBullet().getPower();
@@ -212,8 +176,6 @@ public class Proxy_Robot extends AdvancedRobot implements WebSocketClient.Messag
     
     public void onWin(WinEvent e) {
         isEnded = true;
-        // ByteBuffer imageBytes = getCurrentBattleView();
-        // webSocket.sendBinaryMessage(imageBytes);
         webSocket.sendMessage("{\"isWin\": true, \"time\": " + getTime() + "}");
         // Robot won the battle
         debug("Robot won the battle");
@@ -221,8 +183,6 @@ public class Proxy_Robot extends AdvancedRobot implements WebSocketClient.Messag
     
     public void onDeath(DeathEvent e) {
         isEnded = true;
-        // ByteBuffer imageBytes = getCurrentBattleView();
-        // webSocket.sendBinaryMessage(imageBytes);
         webSocket.sendMessage("{\"isWin\": false, \"time\": " + getTime() + "}");
         // Robot died
         debug("Robot died");

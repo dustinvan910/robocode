@@ -8,6 +8,9 @@ import random
 from collections import deque
 import pickle
 import os
+import torch.optim.lr_scheduler as lr_scheduler
+
+
 
 class DQNetwork(nn.Module):
     def __init__(self, state_size, action_size, hidden_size=512):
@@ -31,7 +34,7 @@ class DQNetwork(nn.Module):
 
 class DQNAgent:
     def __init__(self, state_size=11, action_size=8, learning_rate=0.015, epsilon=1, 
-                 epsilon_min=0.01, epsilon_decay=0.999995, memory_size=50_000, device='auto'):
+                 epsilon_min=0.2, epsilon_decay=0.999995, memory_size=50_000, device='cpu'):
         """
         Initialize DQN Agent
         
@@ -67,7 +70,6 @@ class DQNAgent:
         self.q_network = DQNetwork(state_size, action_size).to(self.device)
         self.target_network = DQNetwork(state_size, action_size).to(self.device)
         self.optimizer = optim.Adam(self.q_network.parameters(), lr=learning_rate )
-        
         # Initialize target network
         self.update_target_network()
         
@@ -104,7 +106,11 @@ class DQNAgent:
         """Train the network on a batch of experiences"""
         if len(self.memory) < self.batch_size:
             return
-        
+        if self.epsilon < 0.3:
+            self.epsilon_decay = 0.999998
+            for param_group in self.optimizer.param_groups:
+                param_group['lr'] = 0.0005
+
         # Sample batch from memory
         batch = random.sample(self.memory, self.batch_size)
         states = torch.FloatTensor([experience[0] for experience in batch]).to(self.device)

@@ -150,10 +150,10 @@ async def handle_robot(websocket):
                     play_time = state_data.get('time')
                     reward = 0
                     if state_data.get('isWin'):
-                        reward = 1000
+                        reward = 100
                         win_episode += 1
                     else:
-                        reward = -1000
+                        reward = -100
                         death_episode += 1
                     
                     agent.remember(
@@ -164,7 +164,7 @@ async def handle_robot(websocket):
                         1
                     )
                     episode_reward+=reward
-                    print("reward", reward)
+                    # print("reward", reward)
                     return
 
                 # Check if state_data contains 'test' key and run get_qvalue if it does
